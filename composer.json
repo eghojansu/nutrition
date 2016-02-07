@@ -1,0 +1,19 @@
+{
+	"name": "eghojansu/nutrition",
+	"description": "Nutrition for fatfree framework",
+	"homepage": "https://github.com/eghojansu/nutrition",
+	"license": "MIT",
+	"require": {
+		"php": ">=5.4",
+		"bcosca/fatfree": "~3.5.1"
+	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/eghojansu/nutrition"
+		}
+	],
+	"require-dev": {
+		"phpunit/phpunit": "4.7.*"
+	}
+}

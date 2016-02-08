@@ -1,0 +1,11 @@
+<phpunit bootstrap="tests/bootstrap.php" colors="true" backupGlobals="false" backupStaticAttributes="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/4.5/phpunit.xsd">
+	<testsuites>
+		<testsuite name="Nutrition">
+			<directory>./tests</directory>
+		</testsuite>
+	</testsuites>
+	<php>
+		<ini name="display_errors" value="On" />
+        <ini name="display_startup_errors" value="On" />
+	</php>
+</phpunit>

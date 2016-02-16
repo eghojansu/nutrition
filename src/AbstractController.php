@@ -11,6 +11,7 @@ abstract class AbstractController
     protected $template;
     protected $templateKey = 'content';
     protected $previousPage;
+    protected $user;
 
     public function beforeroute($app, $params)
     {
@@ -24,6 +25,23 @@ abstract class AbstractController
         if ($current !== $this->previousPage) {
             $app->push('SESSION.history', $current);
         }
+        $this->user = $app->get('app.user');
+    }
+
+    /**
+     * Check wether current user is guest or redirect to homepage
+     */
+    protected function guestOnly()
+    {
+        $this->user->isGuest() || $this->goHome();
+    }
+
+    /**
+     * Check wether current user is user or redirect to homepage
+     */
+    protected function userOnly()
+    {
+        $this->user->wasLogged() || $this->goHome();
     }
 
     /**

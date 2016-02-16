@@ -4,6 +4,7 @@ namespace Nutrition;
 
 use Base;
 use Nutrition;
+use Template;
 
 abstract class AbstractController
 {

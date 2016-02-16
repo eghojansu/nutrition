@@ -39,7 +39,7 @@ final class Nutrition
             }
         }
 
-        $app->set('user', new Nutrition\Security\User);
+        $app->set('app.user', new Nutrition\Security\User);
 
         return $app;
     }

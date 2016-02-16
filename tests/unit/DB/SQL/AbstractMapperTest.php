@@ -2,6 +2,7 @@
 
 namespace Nutrition\Tests\DB\SQL;
 
+use Base;
 use Nutrition\Tests\data\mapper\Product;
 use Nutrition\Tests\data\mapper\Category;
 
@@ -236,6 +237,18 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($map->safeSave());
 
         $this->assertContains('Date Created tidak valid', $map->getAllErrorString());
+    }
+
+    public function testValidationMessage()
+    {
+        Base::instance()->set('validation_messages.date', '{label} tidak benar.');
+        $map = $this->getProduct();
+        $map->product_id = 13;
+        $map->product_name = 'Product';
+        $map->date_created = date('d-m-Y');
+        $this->assertFalse($map->safeSave());
+
+        $this->assertContains('Date Created tidak benar', $map->getAllErrorString());
     }
 
     public function testDefaultFieldMutation()

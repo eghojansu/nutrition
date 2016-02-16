@@ -39,6 +39,7 @@ class Validation
         $this->map = $map;
         $this->map->clearError();
         $this->resolveFilter(strtolower($mode));
+        $this->messages = Base::instance()->get('validation_messages');
     }
 
     /**
@@ -52,16 +53,6 @@ class Validation
         }
 
         return !$this->map->hasError();
-    }
-
-    /**
-     * Add filter message
-     * @param string $filter
-     * @param string $message pattern
-     */
-    public function addMessage($filter, $message)
-    {
-        $this->messages[$filter] = $message;
     }
 
     /**

@@ -12,6 +12,7 @@ use Base;
 use DB\SQL;
 use DB\SQL\Mapper;
 use Registry;
+use Nutrition;
 use Nutrition\DB\MapperInterface;
 use Nutrition\DB\Validation;
 
@@ -43,15 +44,15 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     protected $primaryKeys;
     /**
-     * Enable/disable default filter
+     * Enable/disable default validation
      * @var boolean
      */
-    protected $defaultFilter = true;
+    protected $defaultValidation = true;
     /**
-     * Filters
+     * Validation rules
      * @var array
      */
-    protected $filters = [];
+    protected $rules = [];
     /**
      * Field label
      * @var array
@@ -62,16 +63,155 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * @var array
      */
     protected $errors = [];
+    /**
+     * Filters
+     * @var array
+     */
+    protected $filters = [''];
 
     /**
-     * Save with filter
-     * @param  string $mode
+     * @override DB\SQL\Mapper->select
+     */
+    public function select($fields,$filter=NULL,array $options=NULL,$ttl=0)
+    {
+        return parent::select($fields, $this->getFilter($filter), $options, $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->find
+     */
+    public function find($filter=NULL,array $options=NULL,$ttl=0)
+    {
+        return parent::find($this->getFilter($filter), $options, $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->count
+     */
+    public function count($filter=NULL,$ttl=0)
+    {
+        return parent::count($this->getFilter($filter), $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->erase
+     */
+    public function erase($filter=NULL)
+    {
+        return parent::erase($this->getFilter($filter), $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->findone
+     */
+    public function findone($filter=NULL,array $options=NULL,$ttl=0)
+    {
+        return parent::findone($this->getFilter($filter), $options, $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->paginate
+     */
+    public function paginate($pos=0,$size=10,$filter=NULL,array $options=NULL,$ttl=0)
+    {
+        return parent::paginate($pos, $size, $this->getFilter($filter), $options, $ttl);
+    }
+
+    /**
+     * @override DB\SQL\Mapper->load
+     */
+    public function load($filter=NULL,array $options=NULL,$ttl=0)
+    {
+        return parent::load($this->getFilter($filter), $options, $ttl);
+    }
+
+    /**
+     * Add filter
+     * @param array $filters
+     *        ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or']
+     *        or
+     *        [
+     *            ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or'],
+     *            ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or'],
+     *        ]
+     */
+    public function addFilter(array $filters)
+    {
+        $filterSchema = [1 => null, '=', 'and'];
+        $first        = reset($filters);
+        is_array($first) || $filters = [$filters];
+        $filterString = '';
+        $filterData   = [];
+        $conjunction  = '';
+        foreach ($filters as $filter) {
+            $filter    += $filterSchema;
+            $filterStr  = $filter[0];
+            if (!is_null($filter[1]) && '' !== $filter[1]) {
+                switch (strtolower($filter[2])) {
+                    case 'begin':
+                        $filterStr .= ' like ?';
+                        $filter[1]  = '%'.$filter[1];
+                        break;
+                    case 'contain':
+                        $filterStr .= ' like ?';
+                        $filter[1]  = '%'.$filter[1].'%';
+                        break;
+                    case 'end':
+                        $filterStr .= ' like ?';
+                        $filter[1]  = $filter[1].'%';
+                        break;
+                    default:
+                        $filterStr .= ' '.$filter[2].' ?';
+                        break;
+                }
+                $filterData[] = $filter[1];
+            }
+            if ($conjunction) {
+                $filterStr = ' '.$filter[3].' '.$filterStr;
+            } else {
+                $conjunction = $filter[3];
+            }
+
+            $filterString .= $filterStr;
+        }
+
+        $this->filters[0] = ($this->filters[0]?' '.$conjunction.' ':'').'('.$filterString.')';
+        $this->filters    = array_merge($this->filters, $filterData);
+
+        return $this;
+    }
+
+    /**
+     * Get filter and reset it
+     * @param  mixed $parameterFilter
+     * @return array
+     */
+    public function getFilter($parameterFilter = null)
+    {
+        $filter = $this->filters;
+        $this->filters = [''];
+
+        return $parameterFilter?:(array_filter($filter)?:null);
+    }
+
+    /**
+     * Validate this map
+     * @param  string $mode group filter
+     * @return bool
+     */
+    public function validate($mode = 'default')
+    {
+        return (new Validation($this, $mode))->validate();
+    }
+
+    /**
+     * Save with validation
+     * @param  string $mode group filter
      * @return bool
      */
     public function safeSave($mode = 'default')
     {
-        $validation = new Validation($this, $mode);
-        if ($validation->validate()) {
+        if ($this->validate($mode)) {
             $this->save();
 
             return $this->valid();
@@ -121,7 +261,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     public function getLabel($field)
     {
         if (!isset($this->labels[$field])) {
-            $this->labels[$field] = ucwords(implode(' ', array_filter(explode('_', Base::instance()->snakecase(lcfirst($field))))));
+            $this->labels[$field] = Nutrition::titleIze($field);
         }
 
         return $this->labels[$field];
@@ -223,42 +363,78 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     }
 
     /**
-     * Get filter
+     * Get rules
      * @return array
      */
-    public function getFilter()
+    public function getRules()
     {
-        return $this->filters;
+        return $this->rules;
     }
 
     /**
-     * Set default filter status
+     * Add rule
+     * @param string $field
+     * @param string $rule
+     * @return  object $this
      */
-    public function setDefaultFilter($status)
+    public function addRule($field, $rule)
     {
-        $this->defaultFilter = $status;
+        if (!$this->ruleExists($field, $rule)) {
+            $this->rules[$field] = isset($this->rules[$field])?$this->rules[$field].','.trim($rule, ','):$rule;
+        }
+
+        return $this;
     }
 
     /**
-     * Default filter status
+     * Check if rule was exists
+     * @param  string $field
+     * @param  string $rule
+     * @return bool
+     */
+    public function ruleExists($field, $rule)
+    {
+        $x = explode('(', $rule);
+        $pattern = '/'.preg_quote($x[0], '/').'/i';
+
+        return isset($this->rules[$field]) && preg_match($pattern, $this->rules[$field]);
+    }
+
+    /**
+     * Set default validation status
+     * @param bool $status
+     * @return  object $this
+     */
+    public function setDefaultValidation($status)
+    {
+        $this->defaultValidation = $status;
+
+        return $this;
+    }
+
+    /**
+     * Default validation status
      * @return boolean
      */
-    public function getDefaultFilter()
+    public function getDefaultValidation()
     {
-        return $this->defaultFilter;
+        return $this->defaultValidation;
     }
 
     /**
      * Find by primary key
+     * @param  mixed $ids
      * @return Object $this
      */
-    public function findByPK()
+    public function findByPK($args)
     {
         $pks = $this->getPrimaryKey();
         if (!is_array($pks)) {
             $pks = [$pks];
         }
-        $args = func_get_args();
+        if (!is_array($args)) {
+            $args = [$args];
+        }
         $filter = [''];
         foreach ($pks as $field) {
             $filter[0] .= ($filter[0]?' and ':'').$field.' = ?';
@@ -316,12 +492,40 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     public function getTableName()
     {
         if (!$this->tableName) {
-            $x = explode('\\', get_called_class());
-
-            return $this->tableName = Base::instance()->snakecase(lcfirst(end($x)));
+            return $this->tableName = Nutrition::classNameToTable(get_called_class());
         }
 
         return $this->tableName;
+    }
+
+    /**
+     * Get default field to select
+     * @return null|string
+     */
+    public function getDefaultField()
+    {
+        return $this->defaultField;
+    }
+
+    /**
+     * Set default field
+     * @param string $fields
+     * @return object $this
+     */
+    public function setDefaultField($fields)
+    {
+        $this->defaultField = $fields;
+        // re-construct
+        self::__construct();
+
+        return $this;
+    }
+
+    /**
+     * Init mapper, call in mapper creation
+     */
+    protected function init()
+    {
     }
 
     /**
@@ -336,5 +540,6 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     public function __construct()
     {
         parent::__construct(Connection::getConnection($this->defaultConnection), $this->getTableName(), $this->defaultField, $this->ttl);
+        $this->init();
     }
 }

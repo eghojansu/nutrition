@@ -2,8 +2,8 @@
 
 namespace Nutrition\Tests\DB\SQL;
 
-use Nutrition\Tests\Mapper\Product;
-use Nutrition\Tests\Mapper\Category;
+use Nutrition\Tests\data\mapper\Product;
+use Nutrition\Tests\data\mapper\Category;
 
 /**
  * Testing Nutrition\DB\SQL\AbstractMapper using concrete class
@@ -37,15 +37,16 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->getProduct()->generateID('product_id', $format));
     }
 
-    public function testGetDefaultFilter()
+    public function testDefaultValidationMutation()
     {
         $map = $this->getProduct();
-        $this->assertTrue($map->getDefaultFilter());
-        $map->setDefaultFilter(false);
-        $this->assertFalse($map->getDefaultFilter());
+        $this->assertTrue($map->getDefaultValidation());
+        $set = $map->setDefaultValidation(false);
+        $this->assertEquals($set, $map);
+        $this->assertFalse($map->getDefaultValidation());
     }
 
-    public function testManualErrorMechanism()
+    public function testManualErrorMutation()
     {
         $map = $this->getProduct();
         $this->assertFalse($map->hasError());
@@ -82,6 +83,17 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('TV', $map->product_name);
     }
 
+    public function testValidate()
+    {
+        $map = $this->getProduct();
+        $map->product_id = 24;
+        $map->product_name = 'AC';
+        $map->price = 999;
+        $map->price2 = 5;
+        $map->product_status = 'available';
+        $map->description = 'description that less than 50 chars';
+        $this->assertTrue($map->validate());
+    }
 
     public function testSafeSave()
     {
@@ -224,5 +236,128 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($map->safeSave());
 
         $this->assertContains('Date Created tidak valid', $map->getAllErrorString());
+    }
+
+    public function testDefaultFieldMutation()
+    {
+        $field = 'product_name';
+        $map = $this->getProduct();
+        $set = $map->setDefaultField($field);
+        $this->assertEquals($field, $map->getDefaultField());
+        $this->assertEquals($set, $map);
+    }
+
+    /**
+     * @dataProvider providerFilterMutation
+     */
+    public function testFilterMutation($filter, $expected)
+    {
+        $map = $this->getProduct();
+        $set = $map->addFilter($filter);
+        $this->assertEquals($set, $map);
+        $this->assertEquals($expected, $map->getFilter());
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testLoad($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $map->load();
+        $this->assertTrue($map->valid());
+        $this->assertEquals(1, $map->loaded());
+        $this->assertEquals(1, $map->product_id);
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testSelect($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $data = $map->select('*');
+        $this->assertEquals(1, count($data));
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testFind($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $data = $map->find();
+        $this->assertEquals(1, count($data));
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testCount($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $this->assertEquals(1, $map->count());
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testFindOne($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $one = $map->findone();
+        $this->assertEquals(1, $one->loaded());
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testPaginate($filter)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($filter);
+        $page = $map->paginate();
+        $this->assertEquals(1, $page['total']);
+    }
+
+    public function testErase()
+    {
+        $this->assertTrue(true, 'This should already work');
+    }
+
+    public function testAddRule()
+    {
+        $map = $this->getProduct();
+        $rule = 'whateverRule';
+        $map->addRule('product_name', $rule);
+        $this->assertContains($rule, $map->getRules());
+    }
+
+    public function testRuleExists()
+    {
+        $map = $this->getProduct();
+        $rule = 'inExistsRule';
+        $this->assertFalse($map->ruleExists('product_name', $rule));
+    }
+
+    public function providerFilterImplementation()
+    {
+        return [
+            [['product_name', 'tv']],
+        ];
+    }
+
+    public function providerFilterMutation()
+    {
+        return [
+            [['product_id', 1], ['(product_id = ?)', 1]],
+            [['product_name', 'product'], ['(product_name = ?)', 'product']],
+            [[['product_name', 'tv', 'contain'],['product_id', 1]], ['(product_name like ? and product_id = ?)', '%tv%', 1]],
+        ];
     }
 }

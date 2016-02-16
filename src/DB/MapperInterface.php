@@ -59,19 +59,43 @@ interface MapperInterface
     public function clearError();
 
     /**
-     * Get filter
+     * Get rule
      * @return array
      */
-    public function getFilter();
+    public function getRules();
 
     /**
-     * Set default filter status
+     * Add rule
+     * @param string $field
+     * @param string $rule
+     * @return  $this
      */
-    public function setDefaultFilter($status);
+    public function addRule($field, $rule);
 
     /**
-     * Default filter status
+     * Check if rule was exists
+     * @param  string $field
+     * @param  string $rule
+     * @return bool
+     */
+    public function ruleExists($field, $rule);
+
+    /**
+     * Set default validation status
+     * @return  object $this
+     */
+    public function setDefaultValidation($status);
+
+    /**
+     * Default validation status
      * @return boolean
      */
-    public function getDefaultFilter();
+    public function getDefaultValidation();
+
+    /**
+     * Validate this map
+     * @param  string $mode
+     * @return bool
+     */
+    public function validate($mode = 'default');
 }

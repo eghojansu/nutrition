@@ -1,7 +1,7 @@
 <phpunit bootstrap="tests/bootstrap.php" colors="true" backupGlobals="false" backupStaticAttributes="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/4.5/phpunit.xsd">
 	<testsuites>
-		<testsuite name="Nutrition">
-			<directory>./tests</directory>
+		<testsuite name="Nutrition Test">
+			<directory suffix="Test.php">./tests</directory>
 		</testsuite>
 	</testsuites>
 	<php>

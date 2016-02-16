@@ -17,7 +17,6 @@ final class Nutrition
      * @var  array
      */
     private static $modules = [
-        'rbac' => 'src/Security/RBAC/rbac.ini',
     ];
 
     /**

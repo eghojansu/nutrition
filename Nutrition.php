@@ -198,7 +198,7 @@ final class Nutrition
      * @param  array  $page result of Fatfree\DB\SQL\Mapper
      * @return int
      */
-    public function paginationStartNumber(array $page)
+    public static function paginationStartNumber(array $page)
     {
         return (int) ($page['pos'] * $page['limit'] + 1);
     }

@@ -14,7 +14,7 @@ abstract class AbstractController
 
     public function beforeroute($app, $params)
     {
-        $this->template = $this->template?:$app->get('app.template');
+        $this->template = $this->template?:$app->get('MAIN_TEMPLATE');
         if (!$app->exists('SESSION.history')) {
             $app->set('SESSION.history', []);
         }

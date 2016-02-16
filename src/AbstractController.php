@@ -123,16 +123,17 @@ abstract class AbstractController
     /**
      * Render template view
      * @param  string $view
+     * @param  bool $noTemplate
      * @return null
      */
-    protected function render($view)
+    protected function render($view, $noTemplate = false)
     {
         $app = Base::instance();
-        if ($this->template) {
+        if ($noTemplate || !$this->template) {
+            echo Template::instance()->render($view);
+        } else {
             $app->set($this->templateKey, $view);
             echo Template::instance()->render($this->template);
-        } else {
-            echo Template::instance()->render($view);
         }
     }
 

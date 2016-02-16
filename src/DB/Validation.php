@@ -14,7 +14,7 @@ use Nutrition\InvalidMethodException;
 class Validation
 {
 	/**
-	 * Filter to validate
+	 * Validation rules to inspect
 	 * @var array
 	 */
 	protected $filters = [];
@@ -129,11 +129,19 @@ class Validation
      * @param  bool  $mayEmpty
      * @return bool
      */
-    protected function validationChoices(array $choices, $mayEmpty = false)
+    protected function validationChoices()
     {
+        $args  = func_get_args();
+        if (is_array(reset($args))) {
+            $choices = array_shift($args);
+            $mayEmpty = (bool) end($args);
+        } else {
+            $mayEmpty = is_bool(end($args))?array_pop($args):false;
+            $choices = $args;
+        }
         $value    = trim($this->getValue());
-        $mayEmpty &= ('' === $value || is_null($value));
-        $exists   = in_array($value, $choices);
+        $mayEmpty = ($mayEmpty && ('' === $value || is_null($value)));
+        $exists   = $choices?in_array($value, $choices):true;
 
         return ($mayEmpty || $exists);
     }
@@ -276,10 +284,10 @@ class Validation
     protected function resolveFilter($mode)
     {
         $app = Base::instance();
-    	if ($this->map->getDefaultFilter()) {
+    	if ($this->map->getDefaultValidation()) {
     		$this->resolveDefaultFilter($app);
     	}
-    	foreach ($this->map->getFilter() as $field => $filters) {
+    	foreach ($this->map->getRules() as $field => $filters) {
     		$this->parseFilter($field, $filters, $mode, $app);
     	}
     }
@@ -297,6 +305,9 @@ class Validation
     			$length = isset($match['length'])?$match['length']:null;
     			switch ($match['type']) {
                     case 'int':
+                    case 'bigint':
+                    case 'smallint':
+                    case 'tinyint':
                     case 'integer':
                         $filters['integer'] = [null, null, $length];
                         break;

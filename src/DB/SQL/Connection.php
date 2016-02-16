@@ -45,7 +45,7 @@ class Connection
      */
     public static function getConnection($connection = 'default')
     {
-        $key = 'database.'.$connection;
+        $key = 'DATABASE.'.$connection;
         if (!Registry::exists($key)) {
             $config = (Base::instance()->get($key)?:[]) + [
                 'driver'   => null,

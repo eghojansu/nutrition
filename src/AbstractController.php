@@ -174,4 +174,13 @@ abstract class AbstractController
     {
         return Nutrition::flash($var, $val);
     }
+
+    /**
+     * Is request post
+     * @return boolean
+     */
+    protected function isPost()
+    {
+        return strtolower(Base::instance()->get('VERB'))==='post';
+    }
 }

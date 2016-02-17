@@ -75,7 +75,7 @@ class Validation
         $value     = $this->getValue();
         $available = (isset($value) && '' !== $value);
 
-        return $available?:!$required;
+        return (bool) ($available?:!$required);
     }
 
     /**
@@ -93,7 +93,7 @@ class Validation
         $maxPassed = $isInt && (is_null($max) || $number <= $max);
         $lenPassed = $isInt && (is_null($length) || strlen($number) <= $length);
 
-        return ($minPassed && $maxPassed && $lenPassed);
+        return (bool) ($minPassed && $maxPassed && $lenPassed);
     }
 
     /**
@@ -111,7 +111,7 @@ class Validation
         $maxPassed = $isNumber && (is_null($max) || $number <= $max);
         $lenPassed = $isNumber && (is_null($length) || strlen($number) <= $length+1);
 
-        return ($minPassed && $maxPassed && $lenPassed);
+        return (bool) ($minPassed && $maxPassed && $lenPassed);
     }
 
     /**
@@ -134,7 +134,7 @@ class Validation
         $mayEmpty = ($mayEmpty && ('' === $value || is_null($value)));
         $exists   = $choices?in_array($value, $choices):true;
 
-        return ($mayEmpty || $exists);
+        return (bool) ($mayEmpty || $exists);
     }
 
     /**
@@ -152,7 +152,7 @@ class Validation
         $minPassed = is_null($min) || $length >= $min;
         $maxPassed = is_null($max) || $length <= $max;
 
-        return ($mayEmpty || ($minPassed && $maxPassed));
+        return (bool) ($mayEmpty || ($minPassed && $maxPassed));
     }
 
     /**
@@ -171,7 +171,7 @@ class Validation
         $map = new $mapNamespace;
         $map->load([$field.' = ?', $value], ['limit'=>1]);
 
-        return ($mayEmpty || $map->valid());
+        return (bool) ($mayEmpty || $map->valid());
     }
 
     /**
@@ -186,7 +186,7 @@ class Validation
         $map = clone $this->map;
         $map->load([$field.' = ?', $value], ['limit'=>1]);
 
-        return ($map->dry() || ($this->map->valid() && $map->getPrimaryKeyValue() === $this->map->getPrimaryKeyValue()));
+        return (bool) ($map->dry() || ($this->map->valid() && $map->getPrimaryKeyValue() === $this->map->getPrimaryKeyValue()));
     }
 
     /**
@@ -200,7 +200,7 @@ class Validation
         $value = $this->getValue();
         $mayEmpty &= ('' === $value || is_null($value));
 
-        return ($mayEmpty || preg_match($pattern, $value));
+        return (bool) ($mayEmpty || preg_match($pattern, $value));
     }
 
     /**
@@ -214,7 +214,7 @@ class Validation
         $mayEmpty &= ('' === $value || is_null($value));
         $pattern  = '/^\d{4}\-\d{2}\-\d{2}$/';
 
-        return ($mayEmpty || preg_match($pattern, $value));
+        return (bool) ($mayEmpty || preg_match($pattern, $value));
     }
 
     /**

@@ -290,6 +290,9 @@ class Validation
     protected function resolveDefaultFilter(Base $app)
     {
     	foreach ($this->map->schema() as $field => $schema) {
+            if ($schema['pkey']) {
+                continue;
+            }
     		$filters = [];
     		$filters['required'] = !$schema['nullable'];
     		if (preg_match('/^(?<type>\w+)(?:\((?<length>.+)\))?/', $schema['type'], $match)) {

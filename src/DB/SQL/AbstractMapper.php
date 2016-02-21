@@ -146,26 +146,29 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
         foreach ($filters as $filter) {
             $filter    += $filterSchema;
             $filterStr  = $filter[0];
-            if (!is_null($filter[1]) && '' !== $filter[1]) {
-                switch (strtolower($filter[2])) {
-                    case 'begin':
-                        $filterStr .= ' like ?';
-                        $filter[1]  = '%'.$filter[1];
-                        break;
-                    case 'contain':
-                        $filterStr .= ' like ?';
-                        $filter[1]  = '%'.$filter[1].'%';
-                        break;
-                    case 'end':
-                        $filterStr .= ' like ?';
-                        $filter[1]  = $filter[1].'%';
-                        break;
-                    default:
-                        $filterStr .= ' '.$filter[2].' ?';
-                        break;
-                }
-                $filterData[] = $filter[1];
+            if (!isset($filter[1]) || is_null($filter[1]) || '' == $filter[1]) {
+                continue;
             }
+
+            switch (strtolower($filter[2])) {
+                case 'begin':
+                    $filterStr .= ' like ?';
+                    $filter[1]  = '%'.$filter[1];
+                    break;
+                case 'contain':
+                    $filterStr .= ' like ?';
+                    $filter[1]  = '%'.$filter[1].'%';
+                    break;
+                case 'end':
+                    $filterStr .= ' like ?';
+                    $filter[1]  = $filter[1].'%';
+                    break;
+                default:
+                    $filterStr .= ' '.$filter[2].' ?';
+                    break;
+            }
+            $filterData[] = $filter[1];
+
             if ($conjunction) {
                 $filterStr = ' '.$filter[3].' '.$filterStr;
             } else {
@@ -175,7 +178,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
             $filterString .= $filterStr;
         }
 
-        $this->filters[0] = ($this->filters[0]?' '.$conjunction.' ':'').'('.$filterString.')';
+        $this->filters[0] = $filterString?($this->filters[0]?' '.$conjunction.' ':'').'('.$filterString.')':'';
         $this->filters    = array_merge($this->filters, $filterData);
 
         return $this;

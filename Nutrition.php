@@ -202,4 +202,52 @@ final class Nutrition
     {
         return (int) ($page['pos'] * $page['limit'] + 1);
     }
+
+    /**
+     * Pager
+     * @param  array  $page page returned from DB\Cursor
+     * @param  string $alias current page
+     * @param  mixed $aliasParam
+     * @return null
+     */
+    public static function pagerPaginate(array $page, $alias = null, $aliasParam = null)
+    {
+        $app = Base::instance();
+        $url = self::url($alias?:$app->get('ALIAS'), $aliasParam);
+        $get = $app->get('GET');
+        unset($get['pos']);
+        $next = [
+            'stat'=>'',
+            'url'=>$url.'?'.http_build_query($get+['pos'=>$page['pos']+1]),
+        ];
+        $prev = [
+            'stat'=>'',
+            'url'=>$url.'?'.http_build_query($get+['pos'=>$page['pos']-1])
+        ];
+        $dis = [
+            'stat'=>' class="disabled"',
+            'url'=>'#'
+        ];
+        $pagePos = $page['pos']+1;
+        $info = $page['total']?'page '.$pagePos.'/'.$page['count'].' ':null;
+        if ($page['pos']+1>=$page['count']) {
+            // disable next
+            $next = $dis;
+        }
+        if ($page['pos']===0) {
+            // disable prev
+            $prev = $dis;
+        }
+        $pager = <<<PAGER
+<nav class="page-control pull-right">
+  <ul class="pager">
+    <li class="page-control-info">{$info}total records : {$page[total]}</li>
+    <li{$prev[stat]}><a href="{$prev[url]}">Previous</a></li>
+    <li{$next[stat]}><a href="{$next[url]}">Next</a></li>
+  </ul>
+</nav>
+PAGER;
+
+        return $pager;
+    }
 }

@@ -15,6 +15,7 @@ use Registry;
 use Nutrition;
 use Nutrition\DB\MapperInterface;
 use Nutrition\DB\Validation;
+use Nutrition\InvalidRuntimeException;
 
 abstract class AbstractMapper extends Mapper implements MapperInterface
 {
@@ -68,13 +69,18 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * @var array
      */
     protected $filters = [''];
+    /**
+     * options
+     * @var array
+     */
+    protected $options = [];
 
     /**
      * @override DB\SQL\Mapper->select
      */
     public function select($fields,$filter=NULL,array $options=NULL,$ttl=0)
     {
-        return parent::select($fields, $this->getFilter($filter), $options, $ttl);
+        return parent::select($fields, $this->getFilter($filter), $this->getOption($options), $this->getTTL($ttl));
     }
 
     /**
@@ -82,7 +88,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function find($filter=NULL,array $options=NULL,$ttl=0)
     {
-        return parent::find($this->getFilter($filter), $options, $ttl);
+        return parent::find($this->getFilter($filter), $this->getOption($options), $this->getTTL($ttl));
     }
 
     /**
@@ -90,7 +96,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function count($filter=NULL,$ttl=0)
     {
-        return parent::count($this->getFilter($filter), $ttl);
+        return parent::count($this->getFilter($filter), $this->getTTL($ttl));
     }
 
     /**
@@ -98,7 +104,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function erase($filter=NULL)
     {
-        return parent::erase($this->getFilter($filter), $ttl);
+        return parent::erase($this->getFilter($filter), $this->getTTL($ttl));
     }
 
     /**
@@ -106,7 +112,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function findone($filter=NULL,array $options=NULL,$ttl=0)
     {
-        return parent::findone($this->getFilter($filter), $options, $ttl);
+        return parent::findone($this->getFilter($filter), $this->getOption($options), $this->getTTL($ttl));
     }
 
     /**
@@ -114,7 +120,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function paginate($pos=0,$size=10,$filter=NULL,array $options=NULL,$ttl=0)
     {
-        return parent::paginate($pos, $size, $this->getFilter($filter), $options, $ttl);
+        return parent::paginate($pos, $size, $this->getFilter($filter), $this->getOption($options), $this->getTTL($ttl));
     }
 
     /**
@@ -122,7 +128,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function load($filter=NULL,array $options=NULL,$ttl=0)
     {
-        return parent::load($this->getFilter($filter), $options, $ttl);
+        return parent::load($this->getFilter($filter), $this->getOption($options), $this->getTTL($ttl));
     }
 
     /**
@@ -185,16 +191,119 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     }
 
     /**
+     * AddFilter alias
+     * @see  addFilter method
+     */
+    public function where(array $filters)
+    {
+        return $this->addFilter($filters);
+    }
+
+    /**
      * Get filter and reset it
-     * @param  mixed $parameterFilter
+     * @param  array $args
      * @return array
      */
-    public function getFilter($parameterFilter = null)
+    public function getFilter($args = null)
     {
-        $filter = $this->filters;
+        $filters = $this->filters;
         $this->filters = [''];
 
-        return $parameterFilter?:(array_filter($filter)?:null);
+        return $args?:(array_filter($filters)?:null);
+    }
+
+    /**
+     * Set TTL
+     * @param int $ttl
+     */
+    public function setTTL($ttl)
+    {
+        $this->ttl = $ttl;
+
+        return $this;
+    }
+
+    /**
+     * Get TTL
+     * @param  int $ttl
+     * @return int
+     */
+    public function getTTL($ttl = null)
+    {
+        return $ttl?:$this->ttl;
+    }
+
+    /**
+     * Add option
+     * @param string $name
+     * @param mixed $val
+     */
+    public function addOption($name, $val)
+    {
+        $this->options[$name] = $val;
+
+        return $this;
+    }
+
+    /**
+     * orderBy
+     * @param  string|int $val
+     */
+    public function orderBy($val)
+    {
+        $this->options['order'] = $val;
+
+        return $this;
+    }
+
+    /**
+     * groupBy
+     * @param  string|int $val
+     */
+    public function groupBy($val)
+    {
+        $this->options['group'] = $val;
+
+        return $this;
+    }
+
+    /**
+     * limit
+     * @param  string|int $val
+     */
+    public function limit($val)
+    {
+        $this->options['limit'] = $val;
+
+        return $this;
+    }
+
+    /**
+     * offset
+     * @param  string|int $val
+     */
+    public function offset($val)
+    {
+        $this->options['offset'] = $val;
+
+        return $this;
+    }
+
+    /**
+     * Get option and reset it
+     * @param  mixed $args
+     * @return array
+     */
+    public function getOption($args = null)
+    {
+        if (isset($this->options['offset']) && !isset($this->options['limit'])) {
+            throw new InvalidRuntimeException('You must pass limit when use offset option');
+        }
+
+        $options = $this->options;
+        $this->options = [];
+
+        return $args?:(array_filter($options)?:null);
     }
 
     /**

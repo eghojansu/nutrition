@@ -3,6 +3,7 @@
 namespace Nutrition\Tests\DB\SQL;
 
 use Base;
+use Nutrition\DB\SQL\Connection;
 use Nutrition\Tests\data\mapper\Product;
 use Nutrition\Tests\data\mapper\Category;
 
@@ -16,6 +17,7 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     {
         return new Product;
     }
+
     private function getCategory()
     {
         return new Category;
@@ -336,6 +338,63 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $map->addFilter($filter);
         $page = $map->paginate();
         $this->assertEquals(1, $page['total']);
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testWhere($filter)
+    {
+        $map = $this->getProduct();
+        $map->where($filter);
+        $page = $map->paginate();
+        $this->assertEquals(1, $page['total']);
+    }
+
+    public function testOrderBy()
+    {
+        $map = $this->getProduct();
+        $map->orderBy('product_name');
+        $map->load();
+        $log = Connection::getConnection()->log();
+        $this->assertContains('order by `product_name`', $log, '', true);
+    }
+
+    public function testGroupBy()
+    {
+        $map = $this->getProduct();
+        $map->groupBy('product_name');
+        $map->load();
+        $log = Connection::getConnection()->log();
+        $this->assertContains('group by `product_name`', $log, '', true);
+    }
+
+    public function testLimitOffset()
+    {
+        $map = $this->getProduct();
+        $map->limit(1);
+        $map->offset(1);
+        $map->load();
+        $log = Connection::getConnection()->log();
+        $this->assertContains('limit 1 offset 1', $log, '', true);
+    }
+
+    /**
+     * @expectedException Nutrition\InvalidRuntimeException
+     */
+    public function testOffsetException()
+    {
+        $map = $this->getProduct();
+        $map->offset(1);
+        $map->load();
+    }
+
+    public function testTTLMutation()
+    {
+        $map = $this->getProduct();
+        $value = 20;
+        $map->setTTL($value);
+        $this->assertEquals($map->getTTL(), $value);
     }
 
     public function testErase()

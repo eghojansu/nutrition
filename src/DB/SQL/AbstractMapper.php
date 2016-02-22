@@ -540,17 +540,14 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      */
     public function findByPK($args)
     {
-        $pks = $this->getPrimaryKey();
-        if (!is_array($pks)) {
-            $pks = [$pks];
-        }
         if (!is_array($args)) {
-            $args = [$args];
+            $pk = $this->getPrimaryKey();
+            $args = [$pk=>$args];
         }
         $filter = [''];
-        foreach ($pks as $field) {
+        foreach ($args as $field => $value) {
             $filter[0] .= ($filter[0]?' and ':'').$field.' = ?';
-            $filter[] = array_shift($args);
+            $filter[] = $value;
         }
 
         $this->load($filter, ['limit'=>1]);

@@ -50,7 +50,7 @@ abstract class AbstractController
      */
     protected function getPageNumber()
     {
-        return 1*Base::instance()->get('GET.page');
+        return 1*Base::instance()->get('GET.pos');
     }
 
     /**

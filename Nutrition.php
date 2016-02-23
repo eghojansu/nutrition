@@ -22,7 +22,7 @@ final class Nutrition
      * Usefull template shortcut
      * @var  array
      */
-    private $shortcuts = [
+    private static $shortcuts = [
         'url' => 'Nutrition::url',
         'asset' => 'Nutrition::asset',
         'lower' => 'strtolower',

@@ -42,7 +42,7 @@ final class Nutrition
         $app->mset($opt);
         $app->config($config);
 
-        $shortcuts = array_merge(self::shortcuts, $app->get('TEMPLATE_SHORTCUTS')?:[]);
+        $shortcuts = array_merge(self::$shortcuts, $app->get('TEMPLATE_SHORTCUTS')?:[]);
         foreach ($shortcuts as $key => $value) {
             Template::instance()->filter($key, $value);
         }

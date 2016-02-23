@@ -27,11 +27,11 @@ class AbstractControllerTest extends \PHPUnit_Framework_TestCase
      */
     public function testPageNumber()
     {
-        $data = ['page'=>20];
+        $data = ['pos'=>20];
         $app = $this->getBase();
         $app->mock('GET @testPageNumber', $data);
         $this->assertEquals($data, $_GET);
-        $this->assertEquals($data['page'], $app->get('RESPONSE'));
+        $this->assertEquals($data['pos'], $app->get('RESPONSE'));
     }
 
     /**

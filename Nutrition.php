@@ -18,6 +18,19 @@ final class Nutrition
      */
     private static $modules = [
     ];
+    /**
+     * Usefull template shortcut
+     * @var  array
+     */
+    private $shortcuts = [
+        'url' => 'Nutrition::url',
+        'asset' => 'Nutrition::asset',
+        'lower' => 'strtolower',
+        'upper' => 'strtoupper',
+        'ucfirst' => 'ucfirst',
+        'ucwords' => 'ucwords',
+        'lcfirst' => 'lcfirst',
+    ];
 
     /**
      * Init fatfree Base class and register some filter rule
@@ -29,8 +42,10 @@ final class Nutrition
         $app->mset($opt);
         $app->config($config);
 
-        Template::instance()->filter('url', 'Nutrition::url');
-        Template::instance()->filter('asset', 'Nutrition::asset');
+        $shortcuts = array_merge(self::shortcuts, $app->get('TEMPLATE_SHORTCUTS')?:[]);
+        foreach ($shortcuts as $key => $value) {
+            Template::instance()->filter($key, $value);
+        }
 
         foreach ($app->get('modules')?:[] as $module) {
             $module = strtolower($module);

@@ -428,6 +428,9 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     {
         return [
             [['product_id', 1], ['(product_id = ?)', 1]],
+            [[['product_id', 1],['product_id', 1, '<>']], ['(product_id = ? and product_id <> ?)', 1, 1]],
+            [['product_id', [0,2],'between'], ['(product_id between ? and ?)', 0, 2]],
+            [['product_id = 1'], ['(product_id = 1)']],
             [['product_name', 'product'], ['(product_name = ?)', 'product']],
             [[['product_name', 'tv', 'contain'],['product_id', 1]], ['(product_name like ? and product_id = ?)', '%tv%', 1]],
         ];

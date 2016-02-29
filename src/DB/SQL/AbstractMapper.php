@@ -38,7 +38,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * Time to live in cache
      * @var integer minutes
      */
-    protected $ttl = 60;
+    protected $ttl = 0;
     /**
      * Primary key(s)
      * @var string|array
@@ -152,28 +152,36 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
         foreach ($filters as $filter) {
             $filter    += $filterSchema;
             $filterStr  = $filter[0];
-            if (!isset($filter[1]) || is_null($filter[1]) || '' == $filter[1]) {
-                continue;
+            if (preg_match('/^\w+$/', $filter[0])) {
+                if (isset($filter[1]) && !is_null($filter[1]) && '' != $filter[1]) {
+                    switch (strtolower($filter[2])) {
+                        case 'begin':
+                            $filterStr .= ' like ?';
+                            $filterData[]  = '%'.$filter[1];
+                            break;
+                        case 'contain':
+                            $filterStr .= ' like ?';
+                            $filterData[]  = '%'.$filter[1].'%';
+                            break;
+                        case 'end':
+                            $filterStr .= ' like ?';
+                            $filterData[]  = $filter[1].'%';
+                            break;
+                        case 'between':
+                            $filterStr .= ' between ? and ?';
+                            if (!is_array($filter[1])) {
+                                throw new InvalidConfigurationException('Between filter must supply array of values');
+                            }
+                            $filterData[] = reset($filter[1]);
+                            $filterData[] = end($filter[1]);
+                            break;
+                        default:
+                            $filterStr .= ' '.$filter[2].' ?';
+                            $filterData[]  = $filter[1];
+                            break;
+                    }
+                }
             }
-
-            switch (strtolower($filter[2])) {
-                case 'begin':
-                    $filterStr .= ' like ?';
-                    $filter[1]  = '%'.$filter[1];
-                    break;
-                case 'contain':
-                    $filterStr .= ' like ?';
-                    $filter[1]  = '%'.$filter[1].'%';
-                    break;
-                case 'end':
-                    $filterStr .= ' like ?';
-                    $filter[1]  = $filter[1].'%';
-                    break;
-                default:
-                    $filterStr .= ' '.$filter[2].' ?';
-                    break;
-            }
-            $filterData[] = $filter[1];
 
             if ($conjunction) {
                 $filterStr = ' '.$filter[3].' '.$filterStr;
@@ -209,7 +217,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
         $filters = $this->filters;
         $this->filters = [''];
 
-        return $args?:(array_filter($filters)?:null);
+        return $args?:($filters[0]?$filters:null);
     }
 
     /**

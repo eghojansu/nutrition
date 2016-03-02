@@ -265,21 +265,37 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterMutation
      */
-    public function testFilterMutation($filter, $expected)
+    public function testFilterMutation($str, $value, $expected)
     {
         $map = $this->getProduct();
-        $set = $map->addFilter($filter);
+        $set = $map->addFilter($str, $value);
         $this->assertEquals($set, $map);
+        $this->assertEquals($expected, $map->getFilter());
+    }
+
+    public function testFilterMutationWithMultipleFilter()
+    {
+        $map = $this->getProduct();
+        $filter = $this->providerFilterMutation();
+        $expected = [''];
+        foreach ($filter as $key => $value) {
+            $exp = end($value);
+            $expStr = array_shift($exp);
+            $expected[0] .= ($expected[0]?' and ':'').$expStr;
+            $expected = array_merge($expected, $exp);
+
+            $map->addFilter($value[0], $value[1]);
+        }
         $this->assertEquals($expected, $map->getFilter());
     }
 
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testLoad($filter)
+    public function testLoad($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $map->load();
         $this->assertTrue($map->valid());
         $this->assertEquals(1, $map->loaded());
@@ -289,10 +305,10 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testSelect($filter)
+    public function testSelect($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $data = $map->select('*');
         $this->assertEquals(1, count($data));
     }
@@ -300,10 +316,10 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testFind($filter)
+    public function testFind($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $data = $map->find();
         $this->assertEquals(1, count($data));
     }
@@ -311,20 +327,20 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testCount($filter)
+    public function testCount($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $this->assertEquals(1, $map->count());
     }
 
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testFindOne($filter)
+    public function testFindOne($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $one = $map->findone();
         $this->assertEquals(1, $one->loaded());
     }
@@ -332,10 +348,10 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testPaginate($filter)
+    public function testPaginate($str, $value)
     {
         $map = $this->getProduct();
-        $map->addFilter($filter);
+        $map->addFilter($str, $value);
         $page = $map->paginate();
         $this->assertEquals(1, $page['total']);
     }
@@ -343,10 +359,10 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider providerFilterImplementation
      */
-    public function testWhere($filter)
+    public function testWhere($str, $value)
     {
         $map = $this->getProduct();
-        $map->where($filter);
+        $map->where($str, $value);
         $page = $map->paginate();
         $this->assertEquals(1, $page['total']);
     }
@@ -420,19 +436,17 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     public function providerFilterImplementation()
     {
         return [
-            [['product_name', 'tv']],
+            ['product_name', 'tv'],
         ];
     }
 
     public function providerFilterMutation()
     {
         return [
-            [['product_id', 1], ['(product_id = ?)', 1]],
-            [[['product_id', 1],['product_id', 1, '<>']], ['(product_id = ? and product_id <> ?)', 1, 1]],
-            [['product_id', [0,2],'between'], ['(product_id between ? and ?)', 0, 2]],
-            [['product_id = 1'], ['(product_id = 1)']],
-            [['product_name', 'product'], ['(product_name = ?)', 'product']],
-            [[['product_name', 'tv', 'contain'],['product_id', 1]], ['(product_name like ? and product_id = ?)', '%tv%', 1]],
+            ['product_id', 1, ['(product_id = ?)', 1]],
+            ['product_id = 1', null, ['(product_id = 1)']],
+            ['product_name', 'product', ['(product_name = ?)', 'product']],
+            ['product_id = 1 and product_name = ?', 'product', ['(product_id = 1 and product_name = ?)', 'product']],
         ];
     }
 }

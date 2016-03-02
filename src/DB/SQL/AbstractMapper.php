@@ -133,69 +133,18 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
 
     /**
      * Add filter
-     * @param array $filters
-     *        ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or']
-     *        or
-     *        [
-     *            ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or'],
-     *            ['field', $value, 'operator(eg: =,>,<,begin,contain,end,etc)', 'and|or'],
-     *        ]
+     * @param string $str
+     * @param mixed $value
+     * @param string $conjunctionBefore
      */
-    public function addFilter(array $filters)
+    public function addFilter($str, $value = null, $conjunctionBefore = 'and')
     {
-        $filterSchema = [1 => null, '=', 'and'];
-        $first        = reset($filters);
-        is_array($first) || $filters = [$filters];
-        $filterString = '';
-        $filterData   = [];
-        $conjunction  = '';
-        foreach ($filters as $filter) {
-            $filter    += $filterSchema;
-            $filterStr  = $filter[0];
-            if (preg_match('/^\w+$/', $filter[0])) {
-                if (!isset($filter[1]) || is_null($filter[1]) || '' == $filter[1]) {
-                    continue;
-                } else {
-                    switch (strtolower($filter[2])) {
-                        case 'begin':
-                            $filterStr .= ' like ?';
-                            $filterData[]  = '%'.$filter[1];
-                            break;
-                        case 'contain':
-                            $filterStr .= ' like ?';
-                            $filterData[]  = '%'.$filter[1].'%';
-                            break;
-                        case 'end':
-                            $filterStr .= ' like ?';
-                            $filterData[]  = $filter[1].'%';
-                            break;
-                        case 'between':
-                            $filterStr .= ' between ? and ?';
-                            if (!is_array($filter[1])) {
-                                throw new InvalidConfigurationException('Between filter must supply array of values');
-                            }
-                            $filterData[] = reset($filter[1]);
-                            $filterData[] = end($filter[1]);
-                            break;
-                        default:
-                            $filterStr .= ' '.$filter[2].' ?';
-                            $filterData[]  = $filter[1];
-                            break;
-                    }
-                }
-            }
-
-            if ($conjunction) {
-                $filterStr = ' '.$filter[3].' '.$filterStr;
-            } else {
-                $conjunction = $filter[3];
-            }
-
-            $filterString .= $filterStr;
+        if (preg_match('/^\w+$/', $str)) {
+            $str .= ' = ?';
         }
-
-        $this->filters[0] .= $filterString?(trim($this->filters[0])?' '.$conjunction.' ':'').'('.$filterString.')':'';
-        $this->filters    = array_merge($this->filters, $filterData);
+        $data = is_array($value)?$value:(is_null($value)?[]:[$value]);
+        $this->filters[0] .= ($this->filters[0]?' '.$conjunctionBefore.' ':'').'('.$str.')';
+        $this->filters    = array_merge($this->filters, $data);
 
         return $this;
     }
@@ -204,9 +153,9 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * AddFilter alias
      * @see  addFilter method
      */
-    public function where(array $filters)
+    public function where($str, $value = null, $conjunctionBefore = 'and')
     {
-        return $this->addFilter($filters);
+        return $this->addFilter($str, $value, $conjunctionBefore);
     }
 
     /**

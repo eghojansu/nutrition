@@ -153,7 +153,9 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
             $filter    += $filterSchema;
             $filterStr  = $filter[0];
             if (preg_match('/^\w+$/', $filter[0])) {
-                if (isset($filter[1]) && !is_null($filter[1]) && '' != $filter[1]) {
+                if (!isset($filter[1]) || is_null($filter[1]) || '' == $filter[1]) {
+                    continue;
+                } else {
                     switch (strtolower($filter[2])) {
                         case 'begin':
                             $filterStr .= ' like ?';
@@ -192,7 +194,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
             $filterString .= $filterStr;
         }
 
-        $this->filters[0] = $filterString?($this->filters[0]?' '.$conjunction.' ':'').'('.$filterString.')':'';
+        $this->filters[0] .= $filterString?(trim($this->filters[0])?' '.$conjunction.' ':'').'('.$filterString.')':'';
         $this->filters    = array_merge($this->filters, $filterData);
 
         return $this;

@@ -1,12 +1,24 @@
 <?php
 
 /**
+ * This file is part of eghojansu/nutrition
+ *
+ * @author Eko Kurniawan <ekokurniawanbs@gmail.com>
+ */
+
+/**
  * Nutrition helper
  *
  * @author Eko Kurniawan <fkurniawan@outlook.com>
  */
 final class Nutrition
 {
+    /**
+     * Package Info
+     */
+    const PACKAGE = 'eghojansu/nutrition',
+          VERSION = '1.1.1';
+
     /**
      * Base url
      * @var string
@@ -54,7 +66,11 @@ final class Nutrition
             }
         }
 
-        $app->set('app.user', new Nutrition\Security\User);
+        $app->mset([
+            'PACKAGE' => self::PACKAGE,
+            'VERSION' => self::VERSION,
+            'app.user'=>new Nutrition\Security\User
+            ]);
 
         return $app;
     }

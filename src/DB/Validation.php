@@ -99,7 +99,7 @@ class Validation
         $maxPassed = $isInt && (is_null($max) || $number <= $max);
         $lenPassed = $isInt && (is_null($length) || strlen($number) <= $length);
 
-        return (bool) ($minPassed && $maxPassed && $lenPassed);
+        return (bool) (is_null($number) || ($minPassed && $maxPassed && $lenPassed));
     }
 
     /**
@@ -117,7 +117,7 @@ class Validation
         $maxPassed = $isNumber && (is_null($max) || $number <= $max);
         $lenPassed = $isNumber && (is_null($length) || strlen($number) <= $length+1);
 
-        return (bool) ($minPassed && $maxPassed && $lenPassed);
+        return (bool) (is_null($number) || ($minPassed && $maxPassed && $lenPassed));
     }
 
     /**

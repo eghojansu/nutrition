@@ -22,8 +22,8 @@ $db->exec([
     'CREATE TABLE product (
         product_id INT(10) NOT NULL AUTO_INCREMENT,
         product_name VARCHAR(10) NULL DEFAULT NULL,
-        price INT(3) NULL DEFAULT 0,
-        price2 DECIMAL(3,2) NULL DEFAULT 0,
+        price INT(3) NULL DEFAULT NULL,
+        price2 DECIMAL(3,2) NULL DEFAULT NULL,
         product_status ENUM("available","no stock") NOT NULL DEFAULT "available",
         description VARCHAR(100) NULL DEFAULT NULL,
         category_id INT(10) NULL DEFAULT 0,

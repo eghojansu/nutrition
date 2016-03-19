@@ -413,7 +413,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * @param  string $separator
      * @return string
      */
-    public function getErrorString($separator = '<br>')
+    public function getFirstErrorString($separator = '<br>')
     {
         reset($this->errors);
         $first = key($this->errors);

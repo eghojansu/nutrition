@@ -17,19 +17,13 @@ final class Nutrition
      * Package Info
      */
     const PACKAGE = 'eghojansu/nutrition',
-          VERSION = '1.2.0';
+          VERSION = '2.0.0';
 
     /**
      * Base url
      * @var string
      */
     private static $baseUrl;
-    /**
-     * Module configuration map
-     * @var  array
-     */
-    private static $modules = [
-    ];
     /**
      * Usefull template shortcut
      * @var  array
@@ -46,6 +40,8 @@ final class Nutrition
 
     /**
      * Init fatfree Base class and register some filter rule
+     * @var  array $opt
+     * @var  string $config
      * @return Base instance
      */
     public static function bootstrap(array $opt = [], $config = 'app/config/configs.ini')
@@ -55,22 +51,18 @@ final class Nutrition
         $app->config($config);
 
         $shortcuts = array_merge(self::$shortcuts, $app->get('TEMPLATE_SHORTCUTS')?:[]);
+        $template = Template::instance();
         foreach ($shortcuts as $key => $value) {
-            Template::instance()->filter($key, $value);
+            $template->filter($key, $value);
         }
 
-        foreach ($app->get('modules')?:[] as $module) {
-            $module = strtolower($module);
-            if (isset(self::$modules[$module])) {
-                $app->config(self::$modules[$module], true);
-            }
-        }
-
-        $app->mset([
+        $sysConfig = [
             'PACKAGE' => self::PACKAGE,
             'VERSION' => self::VERSION,
-            'app.user'=>new Nutrition\Security\User
-            ]);
+            'app.user'=> new Nutrition\Security\User,
+            'app.homepage'=> self::baseUrl(),
+            ];
+        $app->mset($sysConfig);
 
         return $app;
     }
@@ -147,14 +139,21 @@ final class Nutrition
 
     /**
      * Send json
-     * @param array $output
+     * @param mixed $output
+     * @param bool $stopOutput
+     * @param array $headers
      */
-    public static function jsonOut(array $output)
+    public static function jsonOut($output, $stopOutput = false, array $headers = ['Content-type'=>'application/json'])
     {
-        header('Content-type: application/json');
+        foreach ($headers as $key => $value) {
+            header($key.': '.$value);
+        }
 
-        echo json_encode($output);
-        die;
+        echo is_string($output)?$output:json_encode($output);
+
+        if ($stopOutput) {
+            die;
+        }
     }
 
     /**
@@ -207,19 +206,53 @@ final class Nutrition
      * Get directory content
      * @param  string $dirname
      * @param  boolean $recursive
+     * @param  boolean $includeHidden
+     * @param  boolean $includeDir
      * @return array
      */
-    public static function dirContent($dirname, $recursive = false)
+    public static function dirContent($dirname, $recursive = false, $includeHidden = false, $includeDir = false)
     {
         $dir = new DirectoryIterator($dirname);
         $content = [];
-        foreach ($dir as $file)
-            if (!$file->isDot()) {
-                if ($file->isDir() && $recursive)
-                    $content = array_merge($content, self::dirContent($file->getPathname(), $recursive));
+        foreach ($dir as $file) {
+            $filename = $file->getFilename();
+            $hidden = '.' === $filename[0];
+            $include = !($file->isDot() || (!$includeHidden && $hidden));
+            if ($include) {
+                if ($file->isDir()) {
+                    if ($recursive) {
+                        $content = array_merge($content, self::dirContent($file->getPathname(), true, $includeHidden, $includeDir));
+                    }
+                }
                 else
                     $content[] = $file->getPathname();
             }
+        }
+        if ($includeDir) {
+            array_push($content, realpath($dirname));
+        }
+
+        return $content;
+    }
+
+    /**
+     * Remove dir
+     * @param  string  $path
+     * @param  boolean $removeParent
+     * @param  boolean $removeHidden
+     * @return array
+     */
+    public static function removeDir($path, $removeParent = false, $removeHidden = false)
+    {
+        $content = self::dirContent($path, true, $removeHidden, true);
+
+        if (!$removeParent) {
+            array_pop($content);
+        }
+
+        foreach ($content as $file) {
+            unlink($file);
+        }
 
         return $content;
     }
@@ -236,7 +269,7 @@ final class Nutrition
 
     /**
      * Pager
-     * @param  array  $page page returned from DB\Cursor
+     * @param  array  $page result of Fatfree\DB\SQL\Mapper
      * @param  string $alias current page
      * @param  mixed $aliasParam
      * @return null
@@ -244,6 +277,8 @@ final class Nutrition
     public static function pagerPaginate(array $page, $alias = null, $aliasParam = null)
     {
         $app = Base::instance();
+        // set pagination start number
+        $app->set('paginationStartNumber', self::paginationStartNumber($page));
         $url = self::url($alias?:$app->get('ALIAS'), $aliasParam);
         $get = $app->get('GET');
         unset($get['pos']);
@@ -280,5 +315,86 @@ final class Nutrition
 PAGER;
 
         return $pager;
+    }
+
+    /**
+     * Dump vars
+     * @param  mixed  $var
+     * @param  boolean $halt
+     */
+    public static function dump($var, $halt = false)
+    {
+        echo '<pre>';
+        var_dump($var);
+        echo '</pre>';
+
+        if ($halt) {
+            die;
+        }
+    }
+
+    /**
+     * Say number in indonesian
+     * note: this function can exhaust memory if $no greater than 1000000
+     * (need improvement)
+     * @param  float $no
+     * @return string
+     */
+    public static function terbilang($no)
+    {
+        if (!is_numeric($no)) {
+            return null;
+        }
+
+        $no *= 1;
+        $minus = 0 > $no;
+        $fraction = fmod($no, 1);
+        $cacah = ['nol','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+
+        $no = abs($no);
+        $no -= $fraction;
+
+        if ($no < 12) {
+            $result = $cacah[$no];
+        } elseif ($no < 20) {
+            $result = $cacah[$no-10].' belas';
+        } else if ($no < 100) {
+            $mod = $no % 10;
+            $mul = floor($no / 10);
+
+            $result = $cacah[$mul].' puluh '.$cacah[$mod];
+        } else if ($no < 1000) {
+            $mod = $no % 100;
+            $mul = floor($no / 100);
+
+            $result = $cacah[$mul].' ratus '.self::terbilang($mod);
+        } else if ($no < 100000) {
+            $mod = $no % 1000;
+            $mul = floor($no / 1000);
+
+            $result = self::terbilang($mul).' ribu '.self::terbilang($mod);
+        } else if ($no < 1000000000) {
+            $mod = $no % 1000000;
+            $mul = floor($no / 1000000);
+
+            $result = self::terbilang($mul).' juta '.self::terbilang($mod);
+        } else {
+            return $no * ($minus?-1:1);
+        }
+
+        $result = ($minus?'minus ':'').str_replace([' nol','satu ','sejuta'], ['','se','satu juta'], $result);
+
+        if ($fraction) {
+            $fraction = (string) $fraction;
+            for ($i=0, $e=strlen($fraction); $i < $e; $i++) {
+                if (0 === $i) {
+                    $result .= ' koma ';
+                } elseif ($i > 1) {
+                    $result .= ' '.self::terbilang($fraction[$i]);
+                }
+            }
+        }
+
+        return $result;
     }
 }

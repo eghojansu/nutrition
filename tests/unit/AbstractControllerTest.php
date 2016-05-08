@@ -116,6 +116,11 @@ class AbstractControllerTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(true, 'This should already work');
     }
 
+    public function testisPostAndIsAjax()
+    {
+        $this->assertTrue(true, 'This should already work');
+    }
+
     public function providerShowError()
     {
         return [

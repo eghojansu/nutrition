@@ -174,6 +174,11 @@ class Validation
         $mayEmpty &= empty($value);
         $field || $field = $this->cursor;
 
+        // assume mapper in same namespace
+        if (false === strpos($mapNamespace, '\\')) {
+            $mapNamespace = $this->map->getNamespace().'\\'.$mapNamespace;
+        }
+
         $map = new $mapNamespace;
         $map->load([$field.' = ?', $value], ['limit'=>1]);
 

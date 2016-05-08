@@ -39,6 +39,6 @@ class Controller extends AbstractController
 
     public function showErrorInternalServer()
     {
-        $this->errorInternalServer();
+        $this->errorServer();
     }
 }

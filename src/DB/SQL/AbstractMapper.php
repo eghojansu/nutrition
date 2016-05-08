@@ -15,9 +15,8 @@ namespace Nutrition\DB\SQL;
  */
 
 use Base;
-use DB\SQL;
-use DB\SQL\Mapper;
 use Registry;
+use DB\SQL\Mapper;
 use Nutrition;
 use Nutrition\DB\MapperInterface;
 use Nutrition\DB\Validation;
@@ -80,6 +79,219 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
      * @var array
      */
     protected $options = [];
+    /**
+     * immediately clear cache after usage
+     * @var boolean
+     */
+    protected $immediatelyClearCache = true;
+    /**
+     * Relations schema
+     * Ex:
+     *
+     *  protected $relations = [
+     *      'parents' => [
+     *          'category' => 'Category->category_id::parent_id',
+     *      ],
+     *      'children' => [
+     *          'product' => 'Product->category_id::category_id',
+     *      ],
+     *  ];
+     * @var array
+     */
+    protected $relations = [];
+    /**
+     * Hold relations object
+     * @var array
+     */
+    protected $relationObjects = [];
+
+    /**
+     * Get class Name
+     * @return string
+     */
+    public function getClassName()
+    {
+        return get_called_class();
+    }
+
+    /**
+     * Get class namespace
+     * @return string
+     */
+    public function getNamespace()
+    {
+        $ns = get_called_class();
+        $ns = substr($ns, 0, strrpos($ns, '\\'));
+
+        return $ns;
+    }
+
+    /**
+     * @override get
+     */
+    public function &get($var)
+    {
+        if ($val = $this->rel($var)) {
+            return $val;
+        }
+
+        return parent::get($var);
+    }
+
+    /**
+     * Get relation
+     * @param  string $id relation id
+     * @return Nutrition\DB\SQL\Mapper
+     */
+    public function rel($id)
+    {
+        if (isset($this->relationObjects[$id])) {
+            return $this->relationObjects[$id];
+        } elseif (isset($this->relations['parents'][$id])) {
+            $rel = $this->relations['parents'][$id];
+            $parent = true;
+        } elseif (isset($this->relations['children'][$id])) {
+            $rel = $this->relations['children'][$id];
+            $parent = false;
+        } else {
+            return false;
+        }
+
+        preg_match('/^(?<class>[\\\\\w]+)\->(?<classID>\w+)::(?<thisID>\w+)$/i', $rel, $xrel);
+
+        // assume mapper in same namespace
+        $class = $xrel['class'];
+        if (false === strpos($class, '\\')) {
+            $class = $this->getNameSpace().'\\'.$class;
+        }
+
+        $thisID = $this->get($xrel['thisID']);
+        $obj = new $class;
+        if ($parent) {
+            $obj->findByPK($thisID);
+        }
+        $obj->setImmediatelyClearCache(false);
+        $obj->set($xrel['classID'], $thisID);
+        $obj->addFilter($xrel['classID'], $thisID);
+
+        return ($this->relationObjects[$id] = $obj);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getImmediatelyClearCache()
+    {
+        return $this->immediatelyClearCache;
+    }
+
+    /**
+     * @param bool $value
+     */
+    public function setImmediatelyClearCache($value)
+    {
+        $this->immediatelyClearCache = $value;
+    }
+
+    /**
+     * Get connection
+     * @return DB\SQL
+     */
+    public function getConnection()
+    {
+        return $this->db;
+    }
+
+    /**
+     * select as array
+     * @see  DB\SQL\Mapper->select
+     */
+    public function selectArray($fields,$filter=NULL,array $options=NULL,$ttl=0)
+    {
+        $filter = $this->getFilter($filter);
+        $options = $this->getOption($options);
+        $ttl = $this->getTTL($ttl);
+
+        if (!$options)
+            $options=array();
+        $options+=array(
+            'group'=>NULL,
+            'order'=>NULL,
+            'limit'=>0,
+            'offset'=>0
+        );
+        $db=$this->db;
+        $sql='SELECT '.$fields.' FROM '.$this->table;
+        $args=array();
+        if ($filter) {
+            if (is_array($filter)) {
+                $args=isset($filter[1]) && is_array($filter[1])?
+                    $filter[1]:
+                    array_slice($filter,1,NULL,TRUE);
+                $args=is_array($args)?$args:array(1=>$args);
+                list($filter)=$filter;
+            }
+            $sql.=' WHERE '.$filter;
+        }
+        if ($options['group']) {
+            $sql.=' GROUP BY '.implode(',',array_map(
+                function($str) use($db) {
+                    return preg_replace_callback(
+                        '/\b(\w+)\h*(HAVING.+|$)/i',
+                        function($parts) use($db) {
+                            return $db->quotekey($parts[1]);
+                        },
+                        $str
+                    );
+                },
+                explode(',',$options['group'])));
+        }
+        if ($options['order']) {
+            $sql.=' ORDER BY '.implode(',',array_map(
+                function($str) use($db) {
+                    return preg_match('/^(\w+)(?:\h+(ASC|DESC))?\h*(?:,|$)/i',
+                        $str,$parts)?
+                        ($db->quotekey($parts[1]).
+                        (isset($parts[2])?(' '.$parts[2]):'')):$str;
+                },
+                explode(',',$options['order'])));
+        }
+        if (preg_match('/mssql|sqlsrv|odbc/', $this->engine) &&
+            ($options['limit'] || $options['offset'])) {
+            $pkeys=array();
+            foreach ($this->fields as $key=>$field)
+                if ($field['pkey'])
+                    $pkeys[]=$key;
+            $ofs=$options['offset']?(int)$options['offset']:0;
+            $lmt=$options['limit']?(int)$options['limit']:0;
+            if (strncmp($db->version(),'11',2)>=0) {
+                // SQL Server 2012
+                if (!$options['order'])
+                    $sql.=' ORDER BY '.$db->quotekey($pkeys[0]);
+                $sql.=' OFFSET '.$ofs.' ROWS';
+                if ($lmt)
+                    $sql.=' FETCH NEXT '.$lmt.' ROWS ONLY';
+            }
+            else {
+                // SQL Server 2008
+                $sql=str_replace('SELECT',
+                    'SELECT '.
+                    ($lmt>0?'TOP '.($ofs+$lmt):'').' ROW_NUMBER() '.
+                    'OVER (ORDER BY '.
+                        $db->quotekey($pkeys[0]).') AS rnum,',$sql);
+                $sql='SELECT * FROM ('.$sql.') x WHERE rnum > '.($ofs);
+            }
+        }
+        else {
+            if ($options['limit'])
+                $sql.=' LIMIT '.(int)$options['limit'];
+            if ($options['offset'])
+                $sql.=' OFFSET '.(int)$options['offset'];
+        }
+        $result=$this->db->exec($sql,$args,$ttl);
+
+        return $result;
+    }
 
     /**
      * @override DB\SQL\Mapper->select
@@ -172,7 +384,9 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     public function getFilter($args = null)
     {
         $filters = $this->filters;
-        $this->filters = [''];
+        if ($immediatelyClearCache) {
+            $this->filters = [''];
+        }
 
         return $args?:($filters[0]?$filters:null);
     }
@@ -622,6 +836,7 @@ abstract class AbstractMapper extends Mapper implements MapperInterface
     public function reset()
     {
         parent::reset();
+        $this->relationObjects = [];
         $this->clearError();
     }
 

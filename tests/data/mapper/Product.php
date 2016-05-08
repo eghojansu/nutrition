@@ -17,6 +17,11 @@ class Product extends AbstractMapper
     ];
     protected $rules = [
         'description' => 'string(null,50,true)',
-        'category_id' => 'lookUp(Nutrition\\Tests\\data\\mapper\\Category, null, true)',
+        'category_id' => 'lookUp(Category, null, true)',
+    ];
+    protected $relations = [
+        'parents' => [
+            'category' => 'Category->category_id::category_id',
+        ],
     ];
 }

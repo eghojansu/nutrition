@@ -29,6 +29,84 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         return new Category;
     }
 
+    public function testGetClassName()
+    {
+        $this->assertEquals('Nutrition\\Tests\\data\\mapper\\Category', $this->getCategory()->getClassName());
+    }
+
+    public function testGetNamespace()
+    {
+        $this->assertEquals('Nutrition\\Tests\\data\\mapper', $this->getCategory()->getNamespace());
+    }
+
+    public function testRelation()
+    {
+        $categories = [
+            [11, 'Sepatu', 0],
+            [12, 'Sepatu Dew', 1],
+            [13, 'Sepatu Ana', 1],
+            [14, 'Baju', 0],
+        ];
+        $products = [
+            [21, 'Sepatu Adi', 13],
+            [22, 'Sepatu Bat', 13],
+            [23, 'Sepatu Sem', 11],
+            [24, 'Baju Jaket', 14],
+        ];
+        $category = $this->getCategory();
+        $product = $this->getProduct();
+
+        foreach ($categories as $val) {
+            $category->reset();
+            $category->category_id = $val[0];
+            $category->category_name = $val[1];
+            $category->parent_id = $val[2];
+            $category->save();
+        }
+
+        foreach ($products as $val) {
+            $product->reset();
+            $product->product_id = $val[0];
+            $product->product_name = $val[1];
+            $product->category_id = $val[2];
+            $product->save();
+        }
+
+        $this->assertEquals(4, $category->count());
+        $this->assertEquals(4, $product->count());
+
+        $category->findByPK(11);
+        $this->assertEquals(1, $category->product->count());
+        $category->findByPK(14);
+        $this->assertEquals(1, $category->product->count());
+        $category->findByPK(13);
+        $this->assertEquals(2, $category->product->count());
+        $category->product->orderBy('product_name')->load();
+        if ($category->product->valid()) {
+            $test = ['Sepatu Adi', 'Sepatu Bat'];
+            do {
+                $this->assertEquals(array_shift($test), $category->product->product_name);
+            } while ($category->product->next());
+        }
+
+        $product->findByPK(21);
+        $this->assertEquals(13, $product->category->category_id);
+        $this->assertEquals('Sepatu Ana', $product->category->category_name);
+        $product->findByPK(22);
+        $this->assertEquals(13, $product->category->category_id);
+        $product->findByPK(23);
+        $this->assertEquals(11, $product->category->category_id);
+        $product->findByPK(24);
+        $this->assertEquals(14, $product->category->category_id);
+        $this->assertEquals('Baju Jaket', $product->product_name);
+        $this->assertEquals('Baju', $product->category->category_name);
+    }
+
+    public function testGetConnection()
+    {
+        $this->assertEquals($this->getProduct()->getConnection(), Connection::getConnection());
+    }
+
     public function testGetTableName()
     {
         $this->assertEquals('product', $this->getProduct()->getTableName());
@@ -72,8 +150,9 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
     public function testInsertingNewData()
     {
         $map = $this->getProduct();
-        $map->product_id = 1;
+        $map->product_id = '1';
         $map->product_name = 'TV';
+        $map->price = '';
         $map->save();
         $this->assertTrue($map->valid());
 
@@ -306,6 +385,18 @@ class AbstractMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($map->valid());
         $this->assertEquals(1, $map->loaded());
         $this->assertEquals(1, $map->product_id);
+    }
+
+    /**
+     * @dataProvider providerFilterImplementation
+     */
+    public function testSelectArray($str, $value)
+    {
+        $map = $this->getProduct();
+        $map->addFilter($str, $value);
+        $data = $map->selectArray('*');
+        $this->assertEquals(1, count($data));
+        $this->assertTrue(is_array($data[0]));
     }
 
     /**

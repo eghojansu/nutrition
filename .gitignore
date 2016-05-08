@@ -1,3 +1,4 @@
 vendor/
 dev-notes/
-*.lock
+tests/data/tmp/
+tests/data/testwritedir/

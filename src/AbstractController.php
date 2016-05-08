@@ -22,16 +22,18 @@ abstract class AbstractController
     public function beforeroute($app, $params)
     {
         $this->template = $this->template?:$app->get('MAIN_TEMPLATE');
+        $this->user = $app->get('app.user');
         if (!$app->exists('SESSION.history')) {
             $app->set('SESSION.history', []);
         }
-        $current = Nutrition::currentUrl();
-        $history = $app->get('SESSION.history');
-        $this->previousPage = end($history);
-        if ($current !== $this->previousPage) {
-            $app->push('SESSION.history', $current);
+        if ('GET' === $app->get('VERB')) {
+            $current = Nutrition::currentUrl();
+            $history = $app->get('SESSION.history');
+            $this->previousPage = end($history);
+            if ($current !== $this->previousPage) {
+                $app->push('SESSION.history', $current);
+            }
         }
-        $this->user = $app->get('app.user');
     }
 
     /**
@@ -100,7 +102,7 @@ abstract class AbstractController
      * Send internal server error page
      * @param  string $message
      */
-    protected function errorInternalServer($message = '')
+    protected function errorServer($message = '')
     {
         $this->error(500, $message);
     }
@@ -115,12 +117,21 @@ abstract class AbstractController
     }
 
     /**
+     * Redirect to $route
+     * @param  string $route route
+     */
+    protected function redirectToRoute($route)
+    {
+        Base::instance()->reroute('@'.$route);
+    }
+
+    /**
      * Get homepage
      * @return string
      */
     protected function getHomepage()
     {
-        return Base::instance()->get('app.homepage')?:Nutrition::baseUrl();
+        return Base::instance()->get('app.homepage');
     }
 
     /**
@@ -132,12 +143,13 @@ abstract class AbstractController
     }
 
     /**
-     * Go back, beware get endless redirecting
+     * Go back to previous page, beware get endless redirecting
      */
     protected function goBack()
     {
+        $app = Base::instance();
         if ($this->previousPage) {
-            Base::instance()->pop('SESSION.history');
+            $app->pop('SESSION.history');
             $this->redirectTo($this->previousPage);
         }
 
@@ -163,22 +175,20 @@ abstract class AbstractController
 
     /**
      * Send JSON Response
-     * @param array $data
+     * @see Nutrition::jsonOut
      */
-    protected function JSONResponse(array $data)
+    protected function JSONResponse()
     {
-        Nutrition::jsonOut($data);
+        call_user_func_array(['Nutrition', 'jsonOut'], func_get_args());
     }
 
     /**
      * Set/get flash session
-     * @param  string $var
-     * @param  mixed $val
-     * @return mixed
+     * @see Nutrition::flash
      */
-    protected function flash($var, $val = null)
+    protected function flash()
     {
-        return Nutrition::flash($var, $val);
+        return call_user_func_array(['Nutrition', 'flash'], func_get_args());
     }
 
     /**
@@ -188,5 +198,14 @@ abstract class AbstractController
     protected function isPost()
     {
         return strtolower(Base::instance()->get('VERB'))==='post';
+    }
+
+    /**
+     * Is request ajax
+     * @return boolean
+     */
+    protected function isAjax()
+    {
+        return Base::instance()->get('AJAX');
     }
 }

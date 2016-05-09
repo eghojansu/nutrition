@@ -17,7 +17,7 @@ final class Nutrition
      * Package Info
      */
     const PACKAGE = 'eghojansu/nutrition',
-          VERSION = '2.0.1';
+          VERSION = '2.0.2';
 
     /**
      * Base url

@@ -48,14 +48,4 @@ class UserTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertTrue($obj->wasLogged());
     }
-
-    /**
-     * @expectedException Nutrition\InvalidConfigurationException
-     */
-    public function testNoProviderException()
-    {
-        $old = Base::instance()->get('SECURITY.provider');
-        Base::instance()->set('SECURITY.provider', null);
-        new User;
-    }
 }

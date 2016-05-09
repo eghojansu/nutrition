@@ -29,8 +29,10 @@ class User
         $this->prepareConfig('provider', 'Nutrition\\Security\\UserProviderInterface');
         $this->prepareConfig('encoder', 'Nutrition\\Security\\PasswordEncoderInterface');
 
-        $user_id = $this->getSession('id');
-        $this->provider->loadUserData($user_id);
+        if ($this->provider) {
+            $user_id = $this->getSession('id');
+            $this->provider->loadUserData($user_id);
+        }
     }
 
     public function verify($password)

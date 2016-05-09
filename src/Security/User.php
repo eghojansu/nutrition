@@ -88,7 +88,7 @@ class User
         $app = Base::instance();
         $class = $app->get('SECURITY.'.$name);
         if (!$class || (($object = new $class) && !($object instanceof $interface))) {
-            throw new InvalidConfigurationException('You need to supply SECURITY.'.$name.' class that implements '.$interface);
+            return;
         }
 
         $this->{$name} = $object;

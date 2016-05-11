@@ -212,8 +212,12 @@ final class Nutrition
      */
     public static function dirContent($dirname, $recursive = false, $includeHidden = false, $includeDir = false)
     {
-        $dir = new DirectoryIterator($dirname);
         $content = [];
+        if (!file_exists($dirname)) {
+            return $content;
+        }
+
+        $dir = new DirectoryIterator($dirname);
         foreach ($dir as $file) {
             $filename = $file->getFilename();
             $hidden = '.' === $filename[0];

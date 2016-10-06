@@ -1,277 +1,592 @@
 <?php
 
-/**
- * This file is part of eghojansu/nutrition
- *
- * @author Eko Kurniawan <ekokurniawanbs@gmail.com>
- */
-
 namespace Nutrition;
 
-use Nutrition\DB\SQL\AbstractMapper;
-use Nutrition\Date;
-use Base;
+use DB\Cursor;
 
-/**
- * Form helper
- */
 class Form
 {
     /**
-     * @var Nutrition\DB\SQL\AbstractMapper
+     * @var DB\Cursor
      */
-    protected $model;
-    /**
-     * Scripts to include
-     * @var array
-     */
-    protected $scripts = [];
+    protected $mapper;
 
     /**
-     * @param AbstractMapper $model
+     * @var  Nutrition\Validation
      */
-    public function __construct(AbstractMapper $model)
+    public $validation;
+
+    protected $attrs = [];
+    protected $labels = [];
+    protected $controlAttrs = [];
+    protected $labelAttrs = [];
+    protected $labelElement = 'label';
+    protected $method = 'POST';
+
+    public function __construct(Cursor $mapper)
     {
-        $this->model = $model;
+        $this->mapper = $mapper;
+        $this->validation = new Validation($mapper);
+        $this->init();
     }
 
     /**
-     * open form
-     * @param  array  $attrs
+     * Init after construction
+     */
+    protected function init()
+    {
+        $this->validation->resolveDefaultFilter();
+
+        return $this;
+    }
+
+    protected function findFilter($field, $filter, array $find, array $replace = [])
+    {
+        $filters = $this->validation->getFilter($field);
+        $rules = [];
+        if (isset($filters[$filter])) {
+            foreach ($find as $key=>$name) {
+                $name = isset($replace[$key])?$replace[$key]:$name;
+                $value = isset($filters[$filter][$key])?$filters[$filter][$key]:null;
+                if (is_null($value)) {
+                    continue;
+                }
+                $rules[$name] = $value;
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Open form
      * @return string
      */
-    public function open(array $attrs = [])
+    public function open()
     {
-        $result = '<form '.$this->compileAttributes($attrs).'>';
+        $attrs = $this->attrs;
+        $attrs['method'] = $this->method;
+        $str = '<form '.$this->renderAttribute($attrs).'>';
 
-        return $result;
+        return $str;
     }
 
     /**
-     * Close form and implode script if any
+     * Close form
      * @return string
      */
     public function close()
     {
-        $script = '<scripts type="text/javascript">'
-                . PHP_EOL
-                . implode(PHP_EOL, $this->scripts)
-                . PHP_EOL
-                . '</script>';
-        $result = ($this->scripts?$script.PHP_EOL:'').'</form>';
+        $str = '</form>';
 
-        return $result;
+        return $str;
     }
 
     /**
-     * Generate hidden field
-     * @param  string $name
-     * @param  array  $attrs
+     * Generate control element
+     * @param  string  $name
+     * @param  array   $attrs
+     * @param  boolean $override
      * @return string
      */
-    public function hidden($name, array $attrs = [])
+    public function element($element, $name = null, array $attrs = [])
     {
-        $attrs = ['type'=>'hidden','placeholder'=>'']+$attrs;
+        $default = [
+            'value'=>$this->value($name),
+        ];
+        $attrs += $default;
+        $str = '<'.$element.$this->renderAttribute($attrs).'>'.$attrs['value'].'</'.$element.'>';
 
-        return $this->input($name, $attrs);
+        return $str;
     }
 
     /**
-     * Generate input
-     * @param  string $name
-     * @param  array  $attrs
+     * Generate control label
+     * @param  string  $name
+     * @param  array   $attrs
+     * @param  boolean $override
      * @return string
      */
-    public function input($name, array $attrs = [])
+    public function label($name, array $attrs = [], $override = false)
     {
-        $value = $this->model->exists($name)?$this->model->get($name):null;
-        $label = $this->model->getLabel($name);
-        $attrs += [
-            'type'=>'text',
+        $default = [
+            'for'=>$name,
+        ];
+        $attrs = ($override?$attrs:$this->mergeAttribute($this->labelAttrs, $attrs))+$default;
+        $str = '<'.$this->labelElement.$this->renderAttribute($attrs).'>'.$this->readName($name).'</'.$this->labelElement.'>';
+
+        return $str;
+    }
+
+    /**
+     * Generate input control
+     * @param  string  $type
+     * @param  string  $name
+     * @param  array   $attrs
+     * @param  boolean $override
+     * @return string
+     */
+    public function input($type, $name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'type'=>$type,
             'name'=>$name,
-            'value'=>$value,
-            'placeholder'=>$label,
-            'style'=>'',
-            'class'=>''
+            'value'=>$this->value($name),
+            'placeholder'=>$this->readName($name),
         ];
+        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $str = '<input'.$this->renderAttribute($attrs).'>';
 
-        $result = '<input '.$this->compileAttributes($attrs).'>';
-
-        return $result;
+        return $str;
     }
 
     /**
-     * Generate input radio
-     * @param  string $name
-     * @param  array|null $list
-     * @param  array  $attrs
-     * @return string
+     * Generate text control
+     * @see  input
      */
-    public function radio($name, $list, array $attrs = [])
+    public function text($name, array $attrs = [], $override = false)
     {
-        $result = '';
-        $attrs += [
-            'type'=>'radio',
-            'placeholder'=>'',
-            'label'=>[],
+        $default = []+$this->findFilter($name,'string',null,['min','max'],'length');
+        $str = $this->input('text', $name, $attrs+$default, $override);
+
+        return $str;
+    }
+
+    /**
+     * Generate password control
+     * @see  input
+     */
+    public function password($name, array $attrs = [], $override = false)
+    {
+        $default = []+$this->findFilter($name,'string',['min','max'],['minlength','maxlength']);
+        $str = $this->input('password', $name, $attrs+$default, $override);
+
+        return $str;
+    }
+
+    /**
+     * Generate file control
+     * @see  input
+     */
+    public function file($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'value'=>null,
         ];
-        $labelAttrs = $this->compileAttributes($attrs['label']);
-        unset($attrs['label']);
-        $realValue = $this->model->exists($name)?(string) $this->model->get($name):'';
+        $str = $this->input('file', $name, $attrs+$default, $override);
 
-        foreach ($list?:[] as $value => $label) {
-            $value = (string) $value;
-            $input = $this->input($name, $attrs+[
-                    'value'=>$value,
-                    'checked'=>($realValue===$value?' checked':'')
-                    ]);
-
-            $result .= ($result?'&nbsp;&nbsp;&nbsp;':'').'<label '.$labelAttrs.'>'.
-                $input.' '.$label.
-                '</label>';
-        }
-
-        return $result;
+        return $str;
     }
 
     /**
-     * Take sql date to combobox date
-     * @param  string $name
-     * @param  array  $attrs
-     * @return string
+     * Generate hidden control
+     * @see  input
      */
-    public function inputDate($name, array $attrs = [])
+    public function hidden($name, array $attrs = [], $override = false)
     {
-        $result = '';
-        $fw = Base::instance();
-        $token = $fw->hash(microtime());
-        $attrs += [
-            'startYear'=>1900,
-            'endYear'=>2030,
-            'style-d'=>'width: 50px',
-            'style-m'=>'width: 95px',
-            'style-y'=>'width: 65px',
-            ];
-        $value = $this->model->exists($name)?$this->model->get($name):null;
-        $dateSelected = array_filter(explode('-', $value))+
-            [date('Y'),date('m'),date('d')];
+        $default = [
+            'value'=>null,
+        ];
+        $str = $this->input('hidden', $name, $attrs+$default, $override);
 
-        $defaultAttrs = [
-            'onchange'=>'nds(\''.$token.'\')',
-            ];
-
-        $result .= '<select '.$this->compileAttributes($defaultAttrs+[
-            'id'=>'d'.$token,
-            'style'=>$attrs['style-d'],
-            ]).'>';
-        for ($i=1; $i < 32; $i++) {
-            $result .= '<option value="'.$i.'"'.($dateSelected[2]==$i?' selected':'').'>'.$i."</option>";
-        }
-        $result .= '</select>';
-
-        $result .= '<select '.$this->compileAttributes($defaultAttrs+[
-            'id'=>'m'.$token,
-            'style'=>$attrs['style-m'],
-            ]).'>';
-        foreach (Date::$months() as $no=>$bulan) {
-            $result .= '<option value="'.$no.'"'.($dateSelected[1]==$no?' selected':'').'>'.$bulan."</option>";
-        }
-        $result .= '</select>';
-
-        $result .= '<select '.$this->compileAttributes($defaultAttrs+[
-            'id'=>'y'.$token,
-            'style'=>$attrs['style-y'],
-            ]).'>';
-        for ($i=$attrs['endYear']; $i > $attrs['startYear']; $i--) {
-            $result .= '<option value="'.$i.'"'.($dateSelected[0]==$i?' selected':'').'>'.$i."</option>";
-        }
-        $result .= '</select>';
-
-        $value = implode('-', $dateSelected);
-        $result .= '<input type="hidden" name="'.$name.'" value="'.$value.'" id="v'.$token.'">';
-
-        if (!isset($this->scripts['radio'])) {
-            $this->scripts['radio'] = <<<JS
-<script type="text/javascript">
-function nds(token) {
-    var d = document.getElementById("d"+token).value;
-    var m = document.getElementById("m"+token).value;
-    var y = document.getElementById("y"+token).value;
-    var v = y+"-"+("00"+m).slice(-2)+"-"+("00"+d).slice(-2);
-
-    document.getElementById("v"+token).value = v;
-
-    return true;
-}
-</script>
-JS;
-        }
-
-        return $result;
+        return $str;
     }
 
     /**
-     * Dropdown
-     * @param  string $name
-     * @param  array|null $list
-     * @param  array  $attrs
-     * @return string
+     * Generate radio control
+     * @see  input
      */
-    public function dropdown($name, $list, array $attrs = [])
+    public function radio($name, array $attrs = [], $override = false)
     {
-        $attrs += [
+        $nameValue = $this->value($name);
+        $default = [
+            'value'=>null,
+            'label'=>$this->readName($name),
+            'wrapLabel'=>false,
+        ];
+        $attrs += $default;
+        if ($attrs['value'] == $nameValue) {
+            $attrs[] = 'checked';
+        }
+        $label = $attrs['label'];
+        $wrapLabel = $attrs['wrapLabel'];
+        unset($attrs['label'],$attrs['wrapLabel']);
+        $str = $this->input('radio', $name, $attrs, $override).' '.$label;
+        if ($wrapLabel) {
+            $str = '<label'.$this->renderAttribute(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
+        }
+
+        return $str;
+    }
+
+    /**
+     * Generate checkbox control
+     * @see  input
+     */
+    public function checkbox($name, array $attrs = [], $override = false)
+    {
+        $nameValue = $this->value($name);
+        $default = [
+            'value'=>null,
+            'label'=>$this->readName($name),
+            'wrapLabel'=>false,
+        ];
+        $attrs += $default;
+        if ($attrs['value'] == $nameValue) {
+            $attrs[] = 'checked';
+        }
+        $label = $attrs['label'];
+        $wrapLabel = $attrs['wrapLabel'];
+        unset($attrs['label'],$attrs['wrapLabel']);
+        $str = $this->input('checkbox', $name, $attrs, $override).' '.$label;
+        if ($wrapLabel) {
+            $str = '<label'.$this->renderAttribute(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
+        }
+
+        return $str;
+    }
+
+    /**
+     * Generate radio list control
+     * @see  input
+     */
+    public function radioList($name, array $attrs = [], $override = false)
+    {
+        $default = [
             'name'=>$name,
-            'placeholder'=>''
+            'options'=>[],
+            'checked'=>$this->value($name),
+            'renderer'=>null,
         ];
-        $realValue = $this->model->exists($name)?(string) $this->model->get($name):'';
+        $attrs += $default;
+        $options = $attrs['options'];
+        $checked = $attrs['checked'];
+        $renderer = $attrs['renderer'];
+        unset($attrs['options'],$attrs['checked'],$attrs['renderer']);
 
-        $result = '<select '.$this->compileAttributes($attrs).'>';
-        foreach ($list?:[] as $value => $label) {
-            $value = (string) $value;
-            $result .= '<option value="'.$value.'"'.($value===$realValue?' selected':'').'>'.$label.'</option>';
+        if ($renderer && is_callable($renderer)) {
+            $str = call_user_func_array($renderer, [$checked,$options]);
+        } else {
+            $str = '';
+            foreach ($options as $label => $value) {
+                $attrs['value'] = $value;
+                $attrs['label'] = $label;
+                $str .= $this->radio($name, $attrs, $override);
+            }
         }
-        $result .= '</select>';
 
-        return $result;
+        return $str;
     }
 
     /**
-     * Generate textarea
-     * @param  string $name
-     * @param  array  $attrs
-     * @return string
+     * Generate checkbox control
+     * @see  input
      */
-    public function textarea($name, array $attrs = [])
+    public function checkboxList($name, array $attrs = [], $override = false)
     {
-        $value = $this->model->exists($name)?$this->model->get($name):null;
-        $label = $this->model->getLabel($name);
-        $attrs += [
+        $default = [
             'name'=>$name,
-            'placeholder'=>$label,
+            'options'=>[],
+            'checked'=>$this->value($name),
+            'renderer'=>null,
         ];
+        $attrs += $default;
+        $options = $attrs['options'];
+        $checked = $attrs['checked'];
+        $renderer = $attrs['renderer'];
+        unset($attrs['options'],$attrs['checked'],$attrs['renderer']);
 
-        $result = '<textarea '.$this->compileAttributes($attrs).'>'.$value.'</textarea>';
+        if ($renderer && is_callable($renderer)) {
+            $str = call_user_func_array($renderer, [$checked,$options]);
+        } else {
+            $str = '';
+            foreach ($options as $label => $value) {
+                $attrs['value'] = $value;
+                $attrs['label'] = $label;
+                $str .= $this->checkbox($name, $attrs, $override);
+            }
+        }
 
-        return $result;
+        return $str;
     }
 
     /**
-     * Compile array of attributes to string
-     * @param  array  $attrs
+     * Generate combobox control
+     * @see  input
+     */
+    public function select($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'name'=>$name,
+            'options'=>[],
+            'selected'=>$this->value($name),
+            'renderer'=>null,
+            'placeholder'=>'-- pilih '.$this->readName($name),
+        ];
+        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $options = $attrs['options'];
+        $selected = $attrs['selected'];
+        $renderer = $attrs['renderer'];
+        unset($attrs['options'],$attrs['selected'],$attrs['renderer']);
+
+        if ($renderer && is_callable($renderer)) {
+            $optionStr = call_user_func_array($renderer, [$selected,$options]);
+        } else {
+            $optionStr = '';
+            if ($attrs['placeholder']) {
+                $optionStr .= '<option value="">'.$attrs['placeholder'].'</option>';
+            }
+            foreach ($options as $label => $value) {
+                $a = ['value'=>$value];
+                if ($value == $selected) {
+                    $a[] = 'selected';
+                }
+                $optionStr .= '<option'.$this->renderAttribute($a).'>'.$label.'</option>';
+            }
+        }
+        $str = '<select'.$this->renderAttribute($attrs).'>'.$optionStr.'</select>';
+
+        return $str;
+    }
+
+    /**
+     * Generate textarea control
+     * @see  input
+     */
+    public function textarea($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'name'=>$name,
+            'value'=>$this->value($name),
+            'placeholder'=>$this->readName($name),
+        ];
+        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $value = $attrs['value'];
+        unset($attrs['value']);
+        $str = '<textarea'.$this->renderAttribute($attrs).'>'.$value.'</textarea>';
+
+        return $str;
+    }
+
+    /**
+     * Generate month list control
+     * @see  input
+     */
+    public function monthList($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'options'=>array_flip(Helper::$months),
+        ];
+        $attrs += $default;
+        $str = $this->select($name, $attrs, $override);
+
+        return $str;
+    }
+
+    /**
+     * Generate number list control
+     * @see  input
+     */
+    public function numberList($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'start'=>1,
+            'end'=>5,
+        ];
+        $attrs += $default;
+        $start = $attrs['start'];
+        $end = $attrs['end'];
+        unset($attrs['start'],$attrs['end']);
+        if (empty($attrs['options'])) {
+            $options = [];
+            for ($i=$start; $i <= $end; $i++) {
+                $options[$i] = $i;
+            }
+            $attrs['options'] = $options;
+        }
+        $str = $this->select($name, $attrs, $override);
+
+        return $str;
+    }
+
+    /**
+     * Generate date list control
+     * @see  input
+     */
+    public function dateList($name, array $attrs = [], $override = false)
+    {
+        $default = [
+            'startYear'=>2016,
+            'endYear'=>2020,
+            'months'=>array_flip(Helper::$months),
+            'value'=>$this->value($name, date('Y-m-d')),
+            'date'=>[
+                'placeholder'=>'tgl --',
+                'style'=>'display: inline; width: 70px; margin-right: 10px',
+            ],
+            'month'=>[
+                'placeholder'=>'bln --',
+                'style'=>'display: inline; width: 150px; margin-right: 10px',
+            ],
+            'year'=>[
+                'placeholder'=>'thn --',
+                'style'=>'display: inline; width: 100px; margin-right: 10px',
+            ],
+        ];
+        $attrs += $default;
+        $value = $attrs['value']?explode('-', $attrs['value']):date('Y-m-d');
+        $startYear = $attrs['startYear'];
+        $endYear = $attrs['endYear'];
+        $optionsMonth = $attrs['months'];
+        $date = $attrs['date'];
+        $month = $attrs['month'];
+        $year = $attrs['year'];
+        unset($attrs['value'],$attrs['startYear'],$attrs['endYear'],$attrs['months'],
+            $attrs['placeholder'],$attrs['date'],$attrs['month'],$attrs['year']);
+
+        // date
+        $a = $date+$attrs;
+        $a['selected'] = $value[2];
+        $a['start'] = 1;
+        $a['end'] = 31;
+        $str = $this->numberList($name.'[3]', $a, $override);
+
+        // month
+        $a = $month+$attrs;
+        $a['selected'] = $value[1];
+        $a['options'] = $optionsMonth;
+        $str .= $this->monthList($name.'[2]', $a, $override);
+
+        // date
+        $a = $year+$attrs;
+        $a['selected'] = $value[0];
+        $a['start'] = $startYear;
+        $a['end'] = $endYear;
+        $str .= $this->numberList($name.'[1]', $a, $override);
+
+        return $str;
+    }
+
+    /**
+     * Method
+     * @param string
+     */
+    public function setMethod($method)
+    {
+        $this->method = strtoupper($method);
+
+        return $this;
+    }
+
+    /**
+     * Label
+     * @param array $labels
+     */
+    public function setLabels(array $labels)
+    {
+        $this->labels = $labels;
+
+        return $this;
+    }
+    /**
+     * LabelElement
+     * @param array $element
+     */
+    public function setLabelElements($element)
+    {
+        $this->labelElement = $element;
+
+        return $this;
+    }
+
+    /**
+     * Form attrs
+     * @param array $attrs
+     */
+    public function setAttrs(array $attrs)
+    {
+        $this->attrs = $attrs;
+
+        return $this;
+    }
+
+    /**
+     * Default label attrs
+     * @param array $attrs
+     */
+    public function setDefaultLabelAttrs(array $attrs)
+    {
+        $this->labelAttrs = $attrs;
+
+        return $this;
+    }
+
+    /**
+     * Default control attrs
+     * @param array $attrs
+     */
+    public function setDefaultControlAttrs(array $attrs)
+    {
+        $this->controlAttrs = $attrs;
+
+        return $this;
+    }
+
+    /**
+     * Get mapper value
+     *
+     * @param  string
      * @return string
      */
-    protected function compileAttributes(array $attrs)
+    protected function value($name, $default = null)
     {
-        $result = '';
-        ksort($attrs);
+        return $this->mapper?$this->mapper->get($name):$default;
+    }
 
-        $attrs = array_filter($attrs, function($var) {
-            return (!is_null($var) && trim($var) !== '');
-        })?:[];
+    /**
+     * Read field name
+     *
+     * @param  string
+     * @return string
+     */
+    protected function readName($name)
+    {
+        return isset($this->labels[$name])?$this->labels[$name]:ucwords(str_replace('_', ' ', $name));
+    }
+
+    /**
+     * Render attributes
+     *
+     * @param  array
+     * @return string
+     */
+    protected function renderAttribute(array $attrs)
+    {
+        $str = '';
         foreach ($attrs as $key => $value) {
-            $result .= ($result?' ':'').(is_numeric($key)?$value:$key.'="'.$value.'"');
+            $str .= ' '.(is_numeric($key)?$value.'=""':$key.'="'.$value.'"');
         }
 
-        return $result;
+        return $str;
+    }
+
+    /**
+     * Merge b to a
+     *
+     * @param  array
+     * @param  array
+     * @return array
+     */
+    protected function mergeAttribute(array $a, array $b)
+    {
+        foreach ($b as $key => $value) {
+            if (isset($a[$key])) {
+                $a[$key] .= ' '.$value;
+            } else {
+                $a[$key] = $value;
+            }
+        }
+
+        return $a;
     }
 }

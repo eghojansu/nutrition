@@ -1,25 +1,32 @@
 {
-	"name": "eghojansu/nutrition",
-	"description": "Nutrition for fatfree framework",
-	"homepage": "https://github.com/eghojansu/nutrition",
-	"license": "MIT",
-	"require": {
-		"php": ">=5.4",
-		"bcosca/fatfree": "~3.5"
-	},
-	"require-dev": {
-		"phpunit/phpunit": "~5.2"
-	},
-	"autoload": {
-		"psr-4": {
-			"Nutrition\\": "src/"
-		},
-		"files": ["Nutrition.php"]
-	},
-	"autoload-dev": {
-		"psr-4": {
-			"Nutrition\\Tests\\": "tests/unit/",
-			"Nutrition\\Tests\\data\\": "tests/data/"
-		}
-	}
+    "name": "eghojansu/nutrition",
+    "description": "Nutrition for fatfree framework",
+    "keywords": ["fatfree", "php", "validation", "form", "user", "framework", "eghojansu", "nutrition"],
+    "type": "library",
+    "homepage": "https://github.com/eghojansu/nutrition",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Eko Kurniawan",
+            "email": "ekokurniawanbs@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "bcosca/fatfree-core": "~3.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~5.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nutrition\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nutrition\\Tests\\": "tests/"
+        }
+    }
 }

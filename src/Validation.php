@@ -1,12 +1,6 @@
 <?php
 
-/**
- * This file is part of eghojansu/nutrition
- *
- * @author Eko Kurniawan <ekokurniawanbs@gmail.com>
- */
-
-namespace Nutrition\DB;
+namespace Nutrition;
 
 /**
  * Validation
@@ -15,20 +9,27 @@ namespace Nutrition\DB;
  */
 
 use Base;
-use Nutrition\InvalidMethodException;
+use DB\SQL\Mapper as SQLMapper;
+use DB\Jig\Mapper as JigMapper;
+use DB\Mongo\Mapper as MongoMapper;
 
 class Validation
 {
-	/**
-	 * Validation rules to inspect
-	 * @var array
-	 */
-	protected $filters = [];
-	/**
-	 * MapperInterface
-	 * @var MapperInterface
-	 */
-	protected $map;
+    /**
+     * Validation rules to inspect
+     * @var array
+     */
+    protected $filters = [];
+    /**
+     * Error
+     * @var array
+     */
+    protected $errors = [];
+    /**
+     * DB\Cursor
+     * @var DB\Cursor
+     */
+    protected $map;
     /**
      * Default messages
      * @var  array
@@ -40,12 +41,73 @@ class Validation
      */
     protected $cursor;
 
-    public function __construct(MapperInterface $map, $mode = 'default')
+    public function __construct(MapperInterface $map)
     {
         $this->map = $map;
-        $this->map->clearError();
-        $this->resolveFilter(strtolower($mode));
         $this->messages = Base::instance()->get('validation_messages');
+    }
+
+    /**
+     * Add error
+     *
+     * @param string
+     * @param string
+     * @param array
+     */
+    public function addError($field, $message, $args)
+    {
+        if (!isset($this->errors[$field])) {
+            $this->errors[$field] = [];
+        }
+
+        $pattern = [
+            '{field}'=>$field,
+            '{value}'=>$this->getValue()
+        ];
+        foreach ($args as $key => $value) {
+            $pattern['{args_'.++$ctr.'}'] = is_array($value)?implode(', ', $value):$value;
+        }
+        $this->errors[$field][] = str_replace(array_keys($pattern), array_values($pattern), $message);
+
+        return $this;
+    }
+
+    /**
+     * Add filter
+     *
+     * @param string
+     * @param string
+     * @param array
+     */
+    public function addFilter($field, $filter, $args)
+    {
+        if (!isset($this->filters[$field])) {
+            $this->filters[$field] = [];
+        }
+        $this->filters[$field][$filter] = $args;
+
+        return $this;
+    }
+
+    /**
+     * Get filter
+     *
+     * @param  string
+     * @return array
+     */
+    public function getFilter($field)
+    {
+        return isset($this->filters[$field])?$this->filters[$field]:[];
+    }
+
+    /**
+     * Get filters
+     *
+     * @return array
+     */
+    public function getFilters()
+    {
+        return $this->filters;
     }
 
     /**
@@ -73,7 +135,7 @@ class Validation
 
     /**
      * Validate required
-     * @param  bool $negate
+     * @param  bool $required negate purposes
      * @return bool
      */
     protected function validationRequired($required = true)
@@ -176,11 +238,24 @@ class Validation
 
         // assume mapper in same namespace
         if (false === strpos($mapNamespace, '\\')) {
-            $mapNamespace = $this->map->getNamespace().'\\'.$mapNamespace;
+            $mapNamespace = getClass($this->map).'\\'.$mapNamespace;
         }
 
         $map = new $mapNamespace;
-        $map->load([$field.' = ?', $value], ['limit'=>1]);
+        $options = ['limit'=>1];
+        if ($map instanceOf SQLMapper) {
+            $filter = ["$field = ?", $value];
+        }
+        elseif ($map instanceOf JigMapper) {
+            $filter = [$field=>$value];
+        }
+        elseif ($map instanceOf MongoMapper) {
+            $filter = ["@{$field} = ?", $value];
+        }
+        else {
+            user_error('Invalid mapper instance');
+        }
+        $map->load($filter, $options);
 
         return (bool) ($mayEmpty || $map->valid());
     }
@@ -189,15 +264,42 @@ class Validation
      * Check unique current map
      * @return bool
      */
-    protected function validationUnique()
+    protected function validationUnique($primaryKey)
     {
         $value = $this->getValue();
         $field = $this->cursor;
 
         $map = clone $this->map;
-        $map->load([$field.' = ?', $value], ['limit'=>1]);
+        $options = ['limit'=>1];
+        if ($map instanceOf SQLMapper) {
+            $filter = ["$field = ?", $value];
+        }
+        elseif ($map instanceOf JigMapper) {
+            $filter = [$field=>$value];
+        }
+        elseif ($map instanceOf MongoMapper) {
+            $filter = ["@{$field} = ?", $value];
+        }
+        else {
+            user_error('Invalid mapper instance');
+        }
+        $map->load($filter, $options);
 
-        return (bool) ($map->dry() || ($this->map->valid() && $map->getPrimaryKeyValue() === $this->map->getPrimaryKeyValue()));
+        $result = $map->dry();
+
+        if (!$result && $this->map->valid()) {
+            $pa = [];
+            $pb = [];
+            $primaryKey = is_array($primaryKey)?$primaryKey:[$primaryKey];
+            foreach ($primaryKey as $key) {
+                $pa[$key] = $this->map->get($key);
+                $pb[$key] = $map->get($key);
+            }
+
+            $result = ($pa === $pb);
+        }
+
+        return (bool) $result;
     }
 
     /**
@@ -251,7 +353,7 @@ class Validation
             $out = call_user_func_array($callable, $args);
             if (is_bool($out)) {
                 if (!$out) {
-                    $this->map->addError($field, $this->getMessage($filter), $args);
+                    $this->addError($field, $this->getMessage($filter), $args);
                 }
             } else {
                 $this->map->set($field, $out);
@@ -263,7 +365,6 @@ class Validation
      * Resolve method
      * @param  string $filter
      * @return string|array callable
-     * @throws InvalidMethodException
      */
     protected function resolveMethod($filter)
     {
@@ -275,23 +376,8 @@ class Validation
         } elseif (is_callable($filter)) {
             return $filter;
         } else {
-            throw new InvalidMethodException('Method '.$filter.' cannot used for validation');
+            user_error('Method '.$filter.' cannot used for validation');
         }
-    }
-
-    /**
-     * Resolve filter
-     * @param  string $mode
-     */
-    protected function resolveFilter($mode)
-    {
-        $app = Base::instance();
-    	if ($this->map->getDefaultValidation()) {
-    		$this->resolveDefaultFilter($app);
-    	}
-    	foreach ($this->map->getRules() as $field => $filters) {
-    		$this->parseFilter($field, $filters, $mode, $app);
-    	}
     }
 
     /**
@@ -300,15 +386,12 @@ class Validation
      */
     protected function resolveDefaultFilter(Base $app)
     {
-    	foreach ($this->map->schema() as $field => $schema) {
-            if ($schema['pkey']) {
-                continue;
-            }
-    		$filters = [];
-    		$filters['required'] = !$schema['nullable'];
-    		if (preg_match('/^(?<type>\w+)(?:\((?<length>.+)\))?/', $schema['type'], $match)) {
-    			$length = isset($match['length'])?$match['length']:null;
-    			switch ($match['type']) {
+        foreach ($this->map->schema() as $field => $schema) {
+            $filters = [];
+            $filters['required'] = !$schema['nullable'];
+            if (preg_match('/^(?<type>\w+)(?:\((?<length>.+)\))?/', $schema['type'], $match)) {
+                $length = isset($match['length'])?$match['length']:null;
+                switch ($match['type']) {
                     case 'int':
                     case 'bigint':
                     case 'smallint':
@@ -333,90 +416,17 @@ class Validation
                     case 'date':
                         $filters['date'] = $schema['nullable'];
                         break;
-    				default:
-    					$filters['string'] = [null, $length, $schema['nullable']];
-    					break;
-    			}
-    		}
+                    default:
+                        $filters['string'] = [null, $length, $schema['nullable']];
+                        break;
+                }
+            }
             $this->filters[$field] = $filters;
             if (!$schema['changed'] && (is_null($schema['value']) || ''===$schema['value']) && !(is_null($schema['default']) || ''===$schema['default'])) {
                 $this->map->set($field, $schema['default']);
             }
-    	}
-    }
-
-    /**
-     * Parse string filter,
-     * masih berpotensi error untuk membaca regexp
-     * @param  string $field
-     * @param  string $filterString
-     * @param  string $mode
-     * @param  Base $app
-     */
-    protected function parseFilter($field, $filterString, $mode, Base $app)
-    {
-        $pattern = '/((?<=\().+?(?=\)))|\w+/';
-        if (preg_match_all($pattern, $filterString, $matches)) {
-            $filters = [];
-            for ($i=0, $length = count($matches[0]); $i < $length; $i++) {
-                $filter = $matches[0][$i];
-                $args = null;
-                if (isset($matches[1][$i+1]) && $matches[1][$i+1]===$matches[0][$i+1]) {
-                    // has argument
-                    extract($this->resolveGroupArgs($matches[1][$i+1], $app));
-                    if (in_array($mode, $groups)) {
-                        $filters[$filter] = $args;
-                    }
-                    $i++;
-                } else {
-                    $filters[$filter] = $args;
-                }
-            }
-            $this->filters[$field] = array_merge(isset($this->filters[$field])?$this->filters[$field]:[], $filters);
-        }
-    }
-
-    /**
-     * Resolve args and groups
-     * @param  string $args
-     * @param  Base   $app
-     * @return array
-     */
-    protected function resolveGroupArgs($args, Base $app)
-    {
-        $resolved = ['groups'=>['default'], 'args'=>$args];
-        if (preg_match('/(?<remove>on\h+(?<groups>[\w,\h]+))/i', $args, $matches)) {
-            $resolved['groups'] = $app->split(strtolower($matches['groups']));
-            $resolved['args'] = str_replace($matches['remove'], '', $args);
-        }
-        $resolved['args'] = $this->resolveArgs($app->split(trim($resolved['args'])));
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve args value to real php value
-     * @param  array  $args
-     * @return array
-     */
-    protected function resolveArgs(array $args)
-    {
-        foreach ($args as $key => $value) {
-            switch ($value) {
-                case 'true':
-                case 'on':
-                    $args[$key] = true;
-                    break;
-                case 'false':
-                case 'off':
-                    $args[$key] = false;
-                    break;
-                case 'null':
-                    $args[$key] = null;
-                    break;
-            }
         }
 
-        return $args;
+        return $this;
     }
 }

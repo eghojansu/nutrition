@@ -16,11 +16,6 @@ SECURITY.provider = \UserClass
 # session key
 SECURITY.sessionKey = user
 
-# default template
-VIEW.template = app/view/template.html
-# template key
-VIEW.key = view
-
 # in order to use SQL Mapper you need construct DB\SQL and assign as DB.SQL in global var
 # but you can also set key in Mapper class too
 DB.SQL = (DB\SQL) instance

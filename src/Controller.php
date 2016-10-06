@@ -38,10 +38,7 @@ class Controller
      */
     public function __construct()
     {
-        $base = Base::instance();
         $this->user = User::insance();
-        $this->template = $this->template ?: $base->get('VIEW.template');
-        $this->templateKey = $this->templateKey ?: $base->get('VIEW.key');
     }
 
     /**

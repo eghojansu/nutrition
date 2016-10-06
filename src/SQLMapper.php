@@ -51,4 +51,45 @@ class SQLMapper extends Mapper
                 date($match[1]);
         }, $format);
     }
+
+    /**
+     * Populate record and transform to key=value pair array
+     * @param  string $key      column name as key
+     * @param  string|callable|null|array $value    column name as value
+     * @param  array  $criteria
+     * @param  array $options
+     * @return array
+     */
+    public function populate($key, $value = null, array $criteria = [], array $options = [])
+    {
+        $data = [];
+        $records = $this->find($criteria, $options);
+        foreach ($records as $record) {
+            if (is_null($value)) {
+                $v = $record[$key];
+            } elseif (is_array($value)) {
+                if (empty($value)) {
+                    $v = $record->cast();
+                } else {
+                    $v = [];
+                    foreach ($value as $k) {
+                        if (!$record->exists($k)) {
+                            user_error("Column $k was not exists");
+                        }
+                        $v[$k] = $record[$k];
+                    }
+                }
+            } elseif (is_callable($value)) {
+                $v = call_user_func_array($value, [$record]);
+            } else {
+                if (!$record->exists($value)) {
+                    user_error("Column $value was not exists");
+                }
+                $v = $record[$value];
+            }
+            $data[$record[$key]] = $v;
+        }
+
+        return $data;
+    }
 }

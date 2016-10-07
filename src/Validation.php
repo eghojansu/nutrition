@@ -384,7 +384,7 @@ class Validation
      * Resolve default filter and assign default value if field not changed
      * @param  Base $app
      */
-    protected function resolveDefaultFilter(Base $app)
+    public function resolveDefaultFilter(Base $app)
     {
         foreach ($this->map->schema() as $field => $schema) {
             $filters = [];

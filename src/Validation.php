@@ -382,10 +382,10 @@ class Validation
 
     /**
      * Resolve default filter and assign default value if field not changed
-     * @param  Base $app
      */
-    public function resolveDefaultFilter(Base $app)
+    public function resolveDefaultFilter()
     {
+        $app = Base::instance();
         foreach ($this->map->schema() as $field => $schema) {
             $filters = [];
             $filters['required'] = !$schema['nullable'];

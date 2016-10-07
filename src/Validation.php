@@ -386,7 +386,7 @@ class Validation
     public function resolveDefaultFilter()
     {
         $app = Base::instance();
-        foreach ($this->map->schema() as $field => $schema) {
+        foreach ($this->map?$this->map->schema():[] as $field => $schema) {
             $filters = [];
             $filters['required'] = !$schema['nullable'];
             if (preg_match('/^(?<type>\w+)(?:\((?<length>.+)\))?/', $schema['type'], $match)) {

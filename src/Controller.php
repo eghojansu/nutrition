@@ -38,7 +38,7 @@ class Controller
      */
     public function __construct()
     {
-        $this->user = User::insance();
+        $this->user = User::instance();
     }
 
     /**

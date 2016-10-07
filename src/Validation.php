@@ -41,7 +41,7 @@ class Validation
      */
     protected $cursor;
 
-    public function __construct(MapperInterface $map)
+    public function __construct(MapperInterface $map = null)
     {
         $this->map = $map;
         $this->messages = Base::instance()->get('validation_messages');

@@ -23,7 +23,12 @@ class Form
     protected $labelElement = 'label';
     protected $method = 'POST';
 
-    public function __construct(Cursor $mapper)
+    /**
+     * Construct
+     *
+     * @param DB\Cursor $mapper
+     */
+    public function __construct(Cursor $mapper = null)
     {
         $this->mapper = $mapper;
         $this->validation = new Validation($mapper);

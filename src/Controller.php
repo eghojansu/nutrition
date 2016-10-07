@@ -101,13 +101,13 @@ class Controller
         $base = Base::instance();
         $base->set('app.user', $this->user);
         if ($this->noTemplate) {
-            echo Template::render($view);
+            echo Template::instance()->render($view);
         } else {
             $template = $template ?: $this->template;
             $key = $key ?: $this->templateKey;
 
             $base->set($key, $view);
-            echo Template::render($template);
+            echo Template::instance()->render($template);
         }
     }
 

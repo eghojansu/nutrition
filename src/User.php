@@ -2,6 +2,7 @@
 
 namespace Nutrition;
 
+use Base;
 use Prefab;
 use DB\Cursor;
 

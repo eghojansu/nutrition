@@ -45,7 +45,7 @@ class Form
         return $this;
     }
 
-    protected function findFilter($field, $filter, array $find, array $replace = [])
+    protected function findFilter($field, $filter, array $find = [], array $replace = [])
     {
         $filters = $this->validation->getFilter($field);
         $rules = [];
@@ -151,7 +151,7 @@ class Form
      */
     public function text($name, array $attrs = [], $override = false)
     {
-        $default = []+$this->findFilter($name,'string',null,['min','max'],'length');
+        $default = []+$this->findFilter($name,'string',['min','max'],['minlength','maxlength']);
         $str = $this->input('text', $name, $attrs+$default, $override);
 
         return $str;

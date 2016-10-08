@@ -94,6 +94,16 @@ class Validation
     }
 
     /**
+     * Check errors
+     *
+     * @return boolean
+     */
+    public function hasError()
+    {
+        return count($this->errors) > 0;
+    }
+
+    /**
      * Add filter
      *
      * @param string
@@ -137,11 +147,15 @@ class Validation
      */
     public function validate()
     {
+        if (empty($this->map)) {
+            return true;
+        }
+
         foreach ($this->filters as $field => $filters) {
             $this->validateField($field, $filters);
         }
 
-        return !$this->map->hasError();
+        return !$this->hasError();
     }
 
     /**

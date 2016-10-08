@@ -150,7 +150,7 @@ class Form
             'value'=>$this->value($name),
             'placeholder'=>$this->readName($name),
         ]+$this->findFilter($name,'required',['required']);;
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $attrs = $override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs)+$default;
         $str = '<input'.$this->renderAttribute($attrs).'>';
 
         return $str;
@@ -339,7 +339,7 @@ class Form
             'renderer'=>null,
             'placeholder'=>'-- pilih '.$this->readName($name),
         ];
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $attrs = $override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs)+$default;
         $options = $attrs['options'];
         $selected = $attrs['selected'];
         $renderer = $attrs['renderer'];
@@ -376,7 +376,7 @@ class Form
             'value'=>$this->value($name),
             'placeholder'=>$this->readName($name),
         ];
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        $attrs = $override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs)+$default;
         $value = $attrs['value'];
         unset($attrs['value']);
         $str = '<textarea'.$this->renderAttribute($attrs).'>'.$value.'</textarea>';

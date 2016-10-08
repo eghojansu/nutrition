@@ -136,9 +136,10 @@ class Form
         $default = [
             'type'=>$type,
             'name'=>$name,
+            'id'=>$name,
             'value'=>$this->value($name),
             'placeholder'=>$this->readName($name),
-        ];
+        ]+$this->findFilter($name,'required',['required']);;
         $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
         $str = '<input'.$this->renderAttribute($attrs).'>';
 

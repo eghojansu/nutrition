@@ -73,6 +73,16 @@ class User extends Prefab
     }
 
     /**
+     * Check user was logged
+     *
+     * @return boolean
+     */
+    public function wasLogged()
+    {
+        return false === empty(Base::instance()->get($this->sessionKey));
+    }
+
+    /**
      * @return Object $this
      */
     public function logout()

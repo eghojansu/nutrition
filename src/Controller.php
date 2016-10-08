@@ -66,6 +66,16 @@ class Controller
     }
 
     /**
+     * Check post request
+     *
+     * @return boolean
+     */
+    protected function isSubmitted($key = 'POST.submitted', $value = 'ok')
+    {
+        return $value===Base::instance()->get($key);
+    }
+
+    /**
      * @param  string
      */
     protected function notFound($message = null)

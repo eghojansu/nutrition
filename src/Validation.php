@@ -73,6 +73,27 @@ class Validation
     }
 
     /**
+     * Get error
+     *
+     * @return array
+     */
+    public function getErrors()
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Get error
+     *
+     * @param  string $field
+     * @return string
+     */
+    public function getError($field)
+    {
+        return isset($this->errors[$field])?implode(', ', $this->errors[$field]):null;
+    }
+
+    /**
      * Add filter
      *
      * @param string

@@ -45,6 +45,16 @@ class Form
         return $this;
     }
 
+    protected function onOpen()
+    {
+        return '';
+    }
+
+    protected function onClose()
+    {
+        return '';
+    }
+
     protected function findFilter($field, $filter, array $find = [], array $replace = [])
     {
         $filters = $this->validation->getFilter($field);
@@ -71,7 +81,7 @@ class Form
     {
         $attrs = $this->attrs;
         $attrs['method'] = $this->method;
-        $str = '<form '.$this->renderAttribute($attrs).'>';
+        $str = '<form'.$this->renderAttribute($attrs).'>'.$this->onOpen();
 
         return $str;
     }
@@ -82,7 +92,7 @@ class Form
      */
     public function close()
     {
-        $str = '</form>';
+        $str = $this->onClose().'</form>';
 
         return $str;
     }

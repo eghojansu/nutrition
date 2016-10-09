@@ -46,6 +46,16 @@ class User extends Prefab
     }
 
     /**
+     * Get user provider
+     *
+     * @return Nutrition\UserProviderInterface
+     */
+    public function getProvider()
+    {
+        return $this->provider;
+    }
+
+    /**
      * Load user data from session
      *
      * @return Object $this

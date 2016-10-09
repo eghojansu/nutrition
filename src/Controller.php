@@ -111,6 +111,8 @@ class Controller
     {
         $base = Base::instance();
         $base->set('app.user', $this->user);
+        $base->copy('SESSION.FLASH', 'FLASH');
+        $base->clear('SESSION.FLASH');
         if ($this->noTemplate) {
             echo Template::instance()->render($view);
         } else {
@@ -179,7 +181,7 @@ class Controller
      */
     protected function flash($name, $message)
     {
-        Base::instance()->push($name, $message);
+        Base::instance()->push('SESSION.FLASH.'.$name, $message);
 
         return $this;
     }

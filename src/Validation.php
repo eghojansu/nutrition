@@ -9,9 +9,9 @@ namespace Nutrition;
  */
 
 use Base;
-use DB\SQL\Mapper as SQLMapper;
-use DB\Jig\Mapper as JigMapper;
-use DB\Mongo\Mapper as MongoMapper;
+use DB\SQL\Mapper as SQLMapperOri;
+use DB\Jig\Mapper as JigMapperOri;
+use DB\Mongo\Mapper as MongoMapperOri;
 
 class Validation
 {
@@ -278,13 +278,13 @@ class Validation
 
         $map = new $mapNamespace;
         $options = ['limit'=>1];
-        if ($map instanceOf SQLMapper) {
+        if ($map instanceOf SQLMapperOri) {
             $filter = ["$field = ?", $value];
         }
-        elseif ($map instanceOf JigMapper) {
+        elseif ($map instanceOf JigMapperOri) {
             $filter = [$field=>$value];
         }
-        elseif ($map instanceOf MongoMapper) {
+        elseif ($map instanceOf MongoMapperOri) {
             $filter = ["@{$field} = ?", $value];
         }
         else {
@@ -306,13 +306,13 @@ class Validation
 
         $map = clone $this->map;
         $options = ['limit'=>1];
-        if ($map instanceOf SQLMapper) {
+        if ($map instanceOf SQLMapperOri) {
             $filter = ["$field = ?", $value];
         }
-        elseif ($map instanceOf JigMapper) {
+        elseif ($map instanceOf JigMapperOri) {
             $filter = [$field=>$value];
         }
-        elseif ($map instanceOf MongoMapper) {
+        elseif ($map instanceOf MongoMapperOri) {
             $filter = ["@{$field} = ?", $value];
         }
         else {

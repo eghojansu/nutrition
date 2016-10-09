@@ -23,7 +23,7 @@ class User extends Prefab
      */
     public function __construct()
     {
-        $config = Base::instance();
+        $base = Base::instance();
         $provider = $base->get('SECURITY.provider');
         $this->sessionKey = 'SESSION.'.($base->get('SECURITY.sessionKey')?:'user');
         if ($provider && ($interfaces = class_implements($provider)) && in_array(UserProviderInterface::class, $interfaces)) {

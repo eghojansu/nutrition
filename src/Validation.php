@@ -412,12 +412,16 @@ class Validation
      */
     protected function resolveMethod($filter)
     {
-        $method = 'validation'.ucfirst($filter);
-        if (method_exists($this, $method)) {
-            return [$this, $method];
-        } elseif (method_exists($this->map, $filter)) {
-            return [$this->map, $filter];
-        } elseif (is_callable($filter)) {
+        if (is_string($filter)) {
+            $method = 'validation'.ucfirst($filter);
+            if (method_exists($this, $method)) {
+                return [$this, $method];
+            } elseif (method_exists($this->map, $filter)) {
+                return [$this->map, $filter];
+            } else {
+                user_error('Method '.$filter.' cannot used for validation');
+            }
+        } if (is_callable($filter)) {
             return $filter;
         } else {
             user_error('Method '.$filter.' cannot used for validation');

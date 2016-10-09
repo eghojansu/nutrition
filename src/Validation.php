@@ -111,12 +111,16 @@ class Validation
      * @param string
      * @param array
      */
-    public function addFilter($field, $filter, $args)
+    public function addFilter($field, $filter, array $args = [])
     {
         if (!isset($this->filters[$field])) {
             $this->filters[$field] = [];
         }
-        $this->filters[$field][$filter] = $args;
+        if (false === is_string($filter) && is_callable($filter)) {
+            $this->filters[$field][] = $filter;
+        } else {
+            $this->filters[$field][$filter] = $args;
+        }
 
         return $this;
     }
@@ -384,6 +388,10 @@ class Validation
     {
         $this->cursor = $field;
         foreach ($filters as $filter => $args) {
+            if (is_numeric($filter)) {
+                $filter = $args;
+                $args = [];
+            }
             is_array($args) || $args = [$args];
             $callable = $this->resolveMethod($filter);
             $out = call_user_func_array($callable, $args);

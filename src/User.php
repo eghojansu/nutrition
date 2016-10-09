@@ -23,17 +23,12 @@ class User extends Prefab
      */
     public function __construct()
     {
-        $base = Base::instance();
+        $config = Base::instance();
         $provider = $base->get('SECURITY.provider');
         $this->sessionKey = 'SESSION.'.($base->get('SECURITY.sessionKey')?:'user');
         if ($provider && ($interfaces = class_implements($provider)) && in_array(UserProviderInterface::class, $interfaces)) {
-            $provider = is_object($provider)?$provider:(new $provider);
-            if ($provider instanceOf Cursor) {
-                $this->provider = $provider;
-                $this->loadFromSession();
-            } else {
-                user_error('User provider must instance of '.Cursor::class);
-            }
+            $this->provider = is_object($provider)?$provider:(new $provider);
+            $this->loadFromSession();
         }
         elseif ($provider) {
             user_error('User provider must implements '.UserProviderInterface::class);
@@ -47,7 +42,8 @@ class User extends Prefab
      */
     public function loadFromSession()
     {
-        $this->provider->copyfrom($this->sessionKey);
+        $values = Base::instance()->get($this->sessionKey);
+        $this->provider->copyfrom($values?:[]);
 
         return $this;
     }
@@ -61,10 +57,8 @@ class User extends Prefab
      */
     public function authenticate($value, $password)
     {
-        $user = $this->provider->loadUser($value);
-
-        if ($user && $user->validatePassword($password)) {
-            $base->set($this->sessionKey, $user->cast());
+        if ($this->provider->loadUser($value)->valid() && $this->provider->validatePassword($password)) {
+            Base::instance()->set($this->sessionKey, $this->provider->cast());
 
             return true;
         }

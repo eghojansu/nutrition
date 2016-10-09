@@ -47,6 +47,13 @@ interface UserProviderInterface
     public function isBlocked();
 
     /**
+     * Check user is valid/loaded
+     *
+     * @return boolean
+     */
+    public function valid();
+
+    /**
      * Validate password
      *
      * @param  string
@@ -70,4 +77,11 @@ interface UserProviderInterface
      * @return Object $this
      */
     public function loadUser($id);
+
+    /**
+     * Get user data as array to save in session
+     *
+     * @return array
+     */
+    public function cast();
 }

@@ -102,6 +102,31 @@ class Form
     }
 
     /**
+     * Assign data to mapper
+     *
+     * @param  array  $data
+     * @return object $this
+     */
+    public function assign(array $data)
+    {
+        foreach ($this->mapper?$data:[] as $key => $value) {
+            $this->mapper->set($key, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Assign from request data
+     *
+     * @return object $this
+     */
+    public function assignFromRequest()
+    {
+        return $this->assign($this->all());
+    }
+
+    /**
      * Open form
      * @return string
      */

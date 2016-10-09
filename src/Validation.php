@@ -9,6 +9,7 @@ namespace Nutrition;
  */
 
 use Base;
+use Cursor;
 use DB\SQL\Mapper as SQLMapperOri;
 use DB\Jig\Mapper as JigMapperOri;
 use DB\Mongo\Mapper as MongoMapperOri;
@@ -41,7 +42,7 @@ class Validation
      */
     protected $cursor;
 
-    public function __construct(MapperInterface $map = null)
+    public function __construct(Cursor $map = null)
     {
         $this->map = $map;
         $this->messages = Base::instance()->get('validation_messages');

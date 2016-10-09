@@ -376,7 +376,7 @@ class Validation
      */
     protected function getValue()
     {
-        return $this->cursor?$this->map->get($this->cursor):null;
+        return ($this->cursor && $this->map && $this->map->exists($this->cursor))?$this->map->get($this->cursor):null;
     }
 
     /**

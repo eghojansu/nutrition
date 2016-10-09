@@ -36,6 +36,16 @@ class User extends Prefab
     }
 
     /**
+     * Check provider is given
+     *
+     * @return boolean
+     */
+    public function hasProvider()
+    {
+        return !empty($this->provider);
+    }
+
+    /**
      * Load user data from session
      *
      * @return Object $this
@@ -77,6 +87,21 @@ class User extends Prefab
     }
 
     /**
+     * Check user roles
+     *
+     * @param  string|array  $roles
+     * @return boolean
+     */
+    public function hasRoles($roles)
+    {
+        $roles = array_filter(is_array($roles)?$roles:explode(',', $roles));
+        $userRoles = $this->user->getRoles();
+        $intersection = array_intersect($userRoles, $roles);
+
+        return (bool) !empty($intersection);
+    }
+
+    /**
      * @return Object $this
      */
     public function logout()
@@ -88,7 +113,7 @@ class User extends Prefab
 
     public function __call($method, array $args)
     {
-        if (method_exists($this->provider, $method)) {
+        if ($this->provider && method_exists($this->provider, $method)) {
             return call_user_func_array([$this->provider, $method], $args);
         }
 

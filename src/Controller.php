@@ -19,6 +19,11 @@ class Controller
     protected $template;
 
     /**
+     * @var string
+     */
+    protected $homepage;
+
+    /**
      * @var template key
      */
     protected $templateKey = 'view';
@@ -47,12 +52,8 @@ class Controller
      */
     public function beforeroute(Base $base, array $params)
     {
-        if ($this->roles) {
-            $userRoles = $this->user->getRoles();
-            $intersection = array_intersect($userRoles, $this->roles);
-            if (empty($intersection)) {
-                $this->notAllowed();
-            }
+        if ($this->roles && $this->user->hasProvider() && false === $this->user->hasRoles($this->roles)) {
+            $this->notAllowed();
         }
     }
 
@@ -181,5 +182,13 @@ class Controller
         Base::instance()->push($name, $message);
 
         return $this;
+    }
+
+    /**
+     * Redirect to homepage
+     */
+    protected function gotoHomepage()
+    {
+        $this->redirect($this->homepage);
     }
 }

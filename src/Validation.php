@@ -9,7 +9,7 @@ namespace Nutrition;
  */
 
 use Base;
-use Cursor;
+use DB\Cursor;
 use DB\SQL\Mapper as SQLMapperOri;
 use DB\Jig\Mapper as JigMapperOri;
 use DB\Mongo\Mapper as MongoMapperOri;

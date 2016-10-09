@@ -67,6 +67,7 @@ interface UserProviderInterface
      * load user
      *
      * @param  string
+     * @return Object $this
      */
     public function loadUser($id);
 }

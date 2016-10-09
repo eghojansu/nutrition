@@ -2,6 +2,7 @@
 
 namespace Nutrition;
 
+use Base;
 use DB\Jig\Mapper;
 
 class JigMapper extends Mapper

@@ -2,6 +2,7 @@
 
 namespace Nutrition;
 
+use Base;
 use DB\SQL\Mapper;
 
 class SQLMapper extends Mapper

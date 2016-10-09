@@ -2,6 +2,7 @@
 
 namespace Nutrition;
 
+use Base;
 use DB\Mongo\Mapper;
 
 class MongoMapper extends Mapper

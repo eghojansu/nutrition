@@ -74,6 +74,33 @@ class Form
     }
 
     /**
+     * Get field value
+     *
+     * @param  string
+     * @return mixed
+     */
+    public function get($name, $default = null)
+    {
+        $key = $this->method.'.'.$name;
+        $value = Base::instance()->get($key);
+
+        return $value ?: $default;
+    }
+
+    /**
+     * Get all
+     *
+     * @param  string
+     * @return array
+     */
+    public function all($default = [])
+    {
+        $value = Base::instance()->get($this->method);
+
+        return $value ?: $default;
+    }
+
+    /**
      * Open form
      * @return string
      */

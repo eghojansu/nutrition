@@ -53,7 +53,15 @@ interface UserProviderInterface
      *
      * @return boolean
      */
-    public function validatePassword($password);
+    public function validatePassword($plainPassword);
+
+    /**
+     * Encrypt password
+     *
+     * @param  string $plainPassword plain
+     * @return string
+     */
+    public function encryptPassword($plainPassword);
 
     /**
      * load user

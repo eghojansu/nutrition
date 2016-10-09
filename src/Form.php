@@ -584,7 +584,7 @@ class Form
      */
     protected function value($name, $default = null)
     {
-        return $this->mapper?$this->mapper->get($name):$default;
+        return ($this->mapper && $this->mapper->exists($name))?$this->mapper->get($name):$default;
     }
 
     /**

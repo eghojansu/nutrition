@@ -2,6 +2,7 @@
 
 namespace Nutrition;
 
+use Base;
 use DB\Cursor;
 
 class Form

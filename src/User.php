@@ -78,12 +78,19 @@ class User extends Prefab
     public function authenticate($value, $password)
     {
         if ($this->provider->loadUser($value)->valid() && $this->provider->validatePassword($password)) {
-            Base::instance()->set($this->sessionKey, $this->provider->cast());
+            $this->updateSession();
 
             return true;
         }
 
         return false;
+    }
+
+    public function updateSession()
+    {
+        Base::instance()->set($this->sessionKey, $this->provider->cast());
+
+        return $this;
     }
 
     /**
@@ -105,7 +112,7 @@ class User extends Prefab
     public function hasRoles($roles)
     {
         $roles = array_filter(is_array($roles)?$roles:explode(',', $roles));
-        $userRoles = $this->user->getRoles();
+        $userRoles = $this->provider->getRoles();
         $intersection = array_intersect($userRoles, $roles);
 
         return (bool) !empty($intersection);

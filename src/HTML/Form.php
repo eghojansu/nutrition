@@ -1,11 +1,13 @@
 <?php
 
-namespace Nutrition;
+namespace Nutrition\HTML;
 
 use Base;
 use DB\Cursor;
+use Nutrition\Helper;
+use Nutrition\Validation;
 
-class Form
+class Form extends AbstractHTML
 {
     /**
      * @var DB\Cursor
@@ -32,7 +34,7 @@ class Form
     public function __construct(Cursor $mapper = null)
     {
         $this->mapper = $mapper;
-        $this->validation = new Validation($mapper);
+        $this->validation = new Validation($mapper, $this->all());
         $this->init();
     }
 
@@ -56,18 +58,17 @@ class Form
         return '';
     }
 
-    protected function findFilter($field, $filter, array $find = [], array $replace = [])
+    protected function findFilter($field, array $filters = [])
     {
-        $filters = $this->validation->getFilter($field);
+        $fieldFilters = $this->validation->getFilter($field);
         $rules = [];
-        if (isset($filters[$filter])) {
-            foreach ($find as $key=>$name) {
-                $name = isset($replace[$key])?$replace[$key]:$name;
-                $value = isset($filters[$filter][$key])?$filters[$filter][$key]:null;
-                if (is_null($value)) {
-                    continue;
+        foreach ($filters as $filter=>$paramAs) {
+            if (isset($fieldFilters[$filter])) {
+                foreach ($paramAs as $key=>$name) {
+                    if (isset($fieldFilters[$filter][$key])) {
+                        $rules[$name] = $fieldFilters[$filter][$key];
+                    }
                 }
-                $rules[$name] = $value;
             }
         }
 
@@ -121,9 +122,14 @@ class Form
      *
      * @return object $this
      */
-    public function assignFromRequest()
+    public function assignFromRequest(array $except = [])
     {
-        return $this->assign($this->all());
+        $all = $this->all();
+        foreach ($except as $key) {
+            unset($all[$key]);
+        }
+
+        return $this->assign($all);
     }
 
     /**
@@ -134,7 +140,7 @@ class Form
     {
         $attrs = $this->attrs;
         $attrs['method'] = $this->method;
-        $str = '<form'.$this->renderAttribute($attrs).'>'.$this->onOpen();
+        $str = '<form'.$this->renderAttributes($attrs).'>'.$this->onOpen();
 
         return $str;
     }
@@ -163,7 +169,7 @@ class Form
             'value'=>$this->value($name),
         ];
         $attrs += $default;
-        $str = '<'.$element.$this->renderAttribute($attrs).'>'.$attrs['value'].'</'.$element.'>';
+        $str = parent::element($element, $attrs['value'], $attrs);
 
         return $str;
     }
@@ -180,8 +186,8 @@ class Form
         $default = [
             'for'=>$name,
         ];
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->labelAttrs, $attrs))+$default;
-        $str = '<'.$this->labelElement.$this->renderAttribute($attrs).'>'.$this->readName($name).'</'.$this->labelElement.'>';
+        $attrs = ($override?$attrs:$this->mergeAttributes($this->labelAttrs, $attrs))+$default;
+        $str = parent::element($this->labelElement, $this->readName($name), $attrs);
 
         return $str;
     }
@@ -202,9 +208,10 @@ class Form
             'id'=>$name,
             'value'=>$this->value($name),
             'placeholder'=>$this->readName($name),
-        ]+$this->findFilter($name,'required',['required']);;
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
-        $str = '<input'.$this->renderAttribute($attrs).'>';
+        ]+$this->findFilter($name,['required'=>['required']]);
+
+        $attrs = ($override?$attrs:$this->mergeAttributes($this->controlAttrs, $attrs))+$default;
+        $str = '<input'.$this->renderAttributes($attrs).'>';
 
         return $str;
     }
@@ -215,7 +222,7 @@ class Form
      */
     public function text($name, array $attrs = [], $override = false)
     {
-        $default = []+$this->findFilter($name,'string',['min','max'],['minlength','maxlength']);
+        $default = []+$this->findFilter($name,['maxLength'=>['maxlength']]);
         $str = $this->input('text', $name, $attrs+$default, $override);
 
         return $str;
@@ -227,8 +234,20 @@ class Form
      */
     public function password($name, array $attrs = [], $override = false)
     {
-        $default = []+$this->findFilter($name,'string',['min','max'],['minlength','maxlength']);
+        $default = []+$this->findFilter($name,['maxLength'=>['maxlength']]);
         $str = $this->input('password', $name, $attrs+$default, $override);
+
+        return $str;
+    }
+
+    /**
+     * Generate number control
+     * @see  input
+     */
+    public function number($name, array $attrs = [], $override = false)
+    {
+        $default = $this->findFilter($name,['maxInt'=>['max'],'minInt'=>['min']])+['min'=>1];
+        $str = $this->input('number', $name, $attrs+$default, $override);
 
         return $str;
     }
@@ -253,9 +272,7 @@ class Form
      */
     public function hidden($name, array $attrs = [], $override = false)
     {
-        $default = [
-            'value'=>null,
-        ];
+        $default = ['required'=>false];
         $str = $this->input('hidden', $name, $attrs+$default, $override);
 
         return $str;
@@ -265,7 +282,7 @@ class Form
      * Generate radio control
      * @see  input
      */
-    public function radio($name, array $attrs = [], $override = false)
+    public function radio($name, array $attrs = [], $override = true)
     {
         $nameValue = $this->value($name);
         $default = [
@@ -282,7 +299,7 @@ class Form
         unset($attrs['label'],$attrs['wrapLabel']);
         $str = $this->input('radio', $name, $attrs, $override).' '.$label;
         if ($wrapLabel) {
-            $str = '<label'.$this->renderAttribute(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
+            $str = '<label'.$this->renderAttributes(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
         }
 
         return $str;
@@ -292,7 +309,7 @@ class Form
      * Generate checkbox control
      * @see  input
      */
-    public function checkbox($name, array $attrs = [], $override = false)
+    public function checkbox($name, array $attrs = [], $override = true)
     {
         $nameValue = $this->value($name);
         $default = [
@@ -301,7 +318,7 @@ class Form
             'wrapLabel'=>false,
         ];
         $attrs += $default;
-        if ($attrs['value'] == $nameValue) {
+        if ($attrs['value'] == $nameValue || (false !== strpos($nameValue, ',') && preg_match('/\b'.preg_quote($attrs['value']).'\b/', $nameValue))) {
             $attrs[] = 'checked';
         }
         $label = $attrs['label'];
@@ -309,7 +326,7 @@ class Form
         unset($attrs['label'],$attrs['wrapLabel']);
         $str = $this->input('checkbox', $name, $attrs, $override).' '.$label;
         if ($wrapLabel) {
-            $str = '<label'.$this->renderAttribute(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
+            $str = '<label'.$this->renderAttributes(is_array($wrapLabel)?$wrapLabel:[]).'>'.$str.'</label>';
         }
 
         return $str;
@@ -319,7 +336,7 @@ class Form
      * Generate radio list control
      * @see  input
      */
-    public function radioList($name, array $attrs = [], $override = false)
+    public function radioList($name, array $attrs = [], $override = true)
     {
         $default = [
             'name'=>$name,
@@ -351,10 +368,10 @@ class Form
      * Generate checkbox control
      * @see  input
      */
-    public function checkboxList($name, array $attrs = [], $override = false)
+    public function checkboxList($name, array $attrs = [], $override = true)
     {
         $default = [
-            'name'=>$name,
+            'name'=>$name.'[]',
             'options'=>[],
             'checked'=>$this->value($name),
             'renderer'=>null,
@@ -383,37 +400,70 @@ class Form
      * Generate combobox control
      * @see  input
      */
-    public function select($name, array $attrs = [], $override = false)
+    public function dropdown($name, array $attrs = [], $override = false)
     {
         $default = [
             'name'=>$name,
             'options'=>[],
+            'restAsData'=>false,
+            'label'=>[],
+            'group'=>null,
+            'labelImplode'=>' - ',
             'selected'=>$this->value($name),
             'renderer'=>null,
             'placeholder'=>'-- pilih '.$this->readName($name),
-        ];
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
-        $options = $attrs['options'];
-        $selected = $attrs['selected'];
-        $renderer = $attrs['renderer'];
-        unset($attrs['options'],$attrs['selected'],$attrs['renderer']);
+        ]+$this->findFilter($name, ['required'=>['required']]);
+        $attrs = ($override?$attrs:$this->mergeAttributes($this->controlAttrs, $attrs))+$default;
+        $v = ['options','selected','renderer','restAsData','label','labelImplode','placeholder','group'];
+        foreach ($v as $key => $value) {
+            $v[$value] = $attrs[$value];
+            unset($v[$key], $attrs[$value]);
+        }
 
-        if ($renderer && is_callable($renderer)) {
-            $optionStr = call_user_func_array($renderer, [$selected,$options]);
+        if ($v['renderer'] && is_callable($v['renderer'])) {
+            $optionStr = call_user_func_array($v['renderer'], [$v['selected'],$v['options']]);
         } else {
             $optionStr = '';
-            if ($attrs['placeholder']) {
-                $optionStr .= '<option value="">'.$attrs['placeholder'].'</option>';
+            if ($v['placeholder']) {
+                $optionStr .= parent::element('option', $v['placeholder'], ['value'=>null]);
             }
-            foreach ($options as $label => $value) {
-                $a = ['value'=>$value];
-                if ($value == $selected) {
-                    $a[] = 'selected';
+            $prev = null;
+            $tmp = '';
+            foreach ($v['options'] as $label => $value) {
+                if (is_array($value)) {
+                    if ($v['group'] && isset($value[$v['group']]) && $value[$v['group']] != $prev) {
+                        $optionStr .= $tmp?parent::element('optgroup', $tmp, ['label'=>$prev]):$tmp;
+                        $tmp = '';
+                        $prev = $value[$v['group']];
+                    }
+                    $a = ['value'=>$label];
+                    $vvalue = $label;
+                    if ($v['label']) {
+                        $label = '';
+                        foreach ($v['label'] as $key) {
+                            $label .= ($label?$v['labelImplode']:'').$value[$key];
+                            unset($value[$key]);
+                        }
+                    }
+                    foreach ($v['restAsData']?$value:[] as $key => $keyvalue) {
+                        $key = 'data-'.str_replace('_', '-', $key);
+                        $a[$key] = $keyvalue;
+                    }
+                    if ($vvalue == $v['selected']) {
+                        $a[] = 'selected';
+                    }
+                    $tmp .= parent::element('option', $label, $a);
+                } else {
+                    $a = ['value'=>$value];
+                    if ($value == $v['selected']) {
+                        $a[] = 'selected';
+                    }
+                    $optionStr .= parent::element('option', $label, $a);
                 }
-                $optionStr .= '<option'.$this->renderAttribute($a).'>'.$label.'</option>';
             }
+            $optionStr .= $prev?parent::element('optgroup', $tmp, ['label'=>$prev]):$tmp;
         }
-        $str = '<select'.$this->renderAttribute($attrs).'>'.$optionStr.'</select>';
+        $str = parent::element('select', $optionStr, $attrs);
 
         return $str;
     }
@@ -428,11 +478,11 @@ class Form
             'name'=>$name,
             'value'=>$this->value($name),
             'placeholder'=>$this->readName($name),
-        ];
-        $attrs = ($override?$attrs:$this->mergeAttribute($this->controlAttrs, $attrs))+$default;
+        ]+$this->findFilter($name, ['maxLength'=>['maxlength'],'required'=>['required']]);
+        $attrs = ($override?$attrs:$this->mergeAttributes($this->controlAttrs, $attrs))+$default;
         $value = $attrs['value'];
         unset($attrs['value']);
-        $str = '<textarea'.$this->renderAttribute($attrs).'>'.$value.'</textarea>';
+        $str = '<textarea'.$this->renderAttributes($attrs).'>'.$value.'</textarea>';
 
         return $str;
     }
@@ -447,7 +497,7 @@ class Form
             'options'=>array_flip(Helper::$months),
         ];
         $attrs += $default;
-        $str = $this->select($name, $attrs, $override);
+        $str = $this->dropdown($name, $attrs, $override);
 
         return $str;
     }
@@ -473,7 +523,7 @@ class Form
             }
             $attrs['options'] = $options;
         }
-        $str = $this->select($name, $attrs, $override);
+        $str = $this->dropdown($name, $attrs, $override);
 
         return $str;
     }
@@ -557,6 +607,7 @@ class Form
 
         return $this;
     }
+
     /**
      * LabelElement
      * @param array $element
@@ -609,7 +660,7 @@ class Form
      */
     protected function value($name, $default = null)
     {
-        return ($this->mapper && $this->mapper->exists($name))?$this->mapper->get($name):$default;
+        return ($this->mapper && $this->mapper->exists($name))?$this->mapper->get($name):$this->get($name, $default);
     }
 
     /**
@@ -621,41 +672,5 @@ class Form
     protected function readName($name)
     {
         return isset($this->labels[$name])?$this->labels[$name]:ucwords(str_replace('_', ' ', $name));
-    }
-
-    /**
-     * Render attributes
-     *
-     * @param  array
-     * @return string
-     */
-    protected function renderAttribute(array $attrs)
-    {
-        $str = '';
-        foreach ($attrs as $key => $value) {
-            $str .= ' '.(is_numeric($key)?$value.'=""':$key.'="'.$value.'"');
-        }
-
-        return $str;
-    }
-
-    /**
-     * Merge b to a
-     *
-     * @param  array
-     * @param  array
-     * @return array
-     */
-    protected function mergeAttribute(array $a, array $b)
-    {
-        foreach ($b as $key => $value) {
-            if (isset($a[$key])) {
-                $a[$key] .= ' '.$value;
-            } else {
-                $a[$key] = $value;
-            }
-        }
-
-        return $a;
     }
 }

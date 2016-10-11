@@ -14,19 +14,78 @@ class SQLMapper extends Mapper
      */
     protected $connection = 'DB.SQL';
 
+    /**
+     * Field labels
+     *
+     * @var array
+     */
+    protected $labels = [];
+
+    /**
+     * Mappers
+     *
+     * @var  array
+     */
+    protected $maps;
+
     public function __construct($table = null, $fields = null, $ttl = 60)
     {
         $db = Base::instance()->get($this->connection);
         parent::__construct($db, $table?:$this->source, $fields, $ttl);
+        $this->init();
+    }
+
+    /**
+     * Init
+     *
+     * @return  object $this
+     */
+    protected function init()
+    {
+        // do something on map creation
+
+        return $this;
+    }
+
+    /**
+     * Get relation
+     *
+     * @param  string $name
+     * @return SQLMapper
+     */
+    public function map($name)
+    {
+        if (empty($this->maps[$name])) {
+            return null;
+        }
+
+        if (!$this->maps[$name] instanceOf SQLMapper) {
+            $map = $this->maps[$name];
+
+            $this->maps[$name] = is_callable($map['class'])?call_user_func_array($map['class'], [$this]):new $map['class'];
+            if (isset($map['key'])) {
+                $map['key'] = is_array($map['key'])?$map['key']:[$map['key']];
+
+                $filter = [''];
+                foreach ($map['key'] as $key=>$pair) {
+                    $filter[0] .= ($filter[0]?', ':'').(is_numeric($key)?$pair:$key).' = ?';
+                    $filter[] = $this->get($pair);
+                }
+                $this->maps[$name]->load($filter, isset($map['option'])?$map['option']:null);
+            }
+        }
+
+        return $this->maps[$name];
     }
 
     /**
      * Generate new ID based on format
      * @param string $columName
      * @param string $format
-     * @return string
+     * @param string|boolean $assign
+     * @return object|string
      */
-    public function nextID($columnName, $format)
+    public function nextID($columnName, $format, $assign = false)
     {
         $clone = clone $this;
         $clone->load(null, [
@@ -42,15 +101,27 @@ class SQLMapper extends Mapper
                     '(?<serial>'.str_replace('9', '[0-9]', $match[1]).')':
                     '(?<date>.{'.strlen(date($match[1])).'})';
             }, $format);
-            if (preg_match('/^'.$pattern.'$/i', $clone[$columnName], $match))
+            if (preg_match('/^'.$pattern.'$/i', $clone[$columnName], $match)) {
                 $last = $match['serial']*1;
+            }
         }
 
-        return preg_replace_callback($boundPattern, function($match) use ($last) {
+        $id = preg_replace_callback($boundPattern, function($match) use ($last) {
             return is_numeric($match[1])?
                 str_pad($last+1, strlen($match[1]), '0', STR_PAD_LEFT):
                 date($match[1]);
         }, $format);
+
+echo '<pre>';
+echo $this->db->log();die;
+
+        if ($assign) {
+            $this->set(is_string($assign)?$assign:$columnName, $id);
+
+            return $this;
+        }
+
+        return $id;
     }
 
     /**
@@ -92,5 +163,41 @@ class SQLMapper extends Mapper
         }
 
         return $data;
+    }
+
+    /**
+     * Get field label
+     *
+     * @param  string $field
+     * @return string
+     */
+    public function getLabel($field)
+    {
+        if (empty($this->labels[$field])) {
+            $this->labels[$field] = ucfirst(implode(' ', explode('_', $field)));
+        }
+
+        return $this->labels[$field];
+    }
+
+    /**
+     * Get labels
+     *
+     * @return array
+     */
+    public function getLabels()
+    {
+        return $this->labels;
+    }
+
+    /**
+     * Get previous field value
+     *
+     * @param  string $field
+     * @return string
+     */
+    public function getPrevious($field)
+    {
+        return $this->fields[$field]['previous'];
     }
 }

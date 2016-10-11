@@ -50,7 +50,7 @@ class Controller
      * @param  Base
      * @param  array
      */
-    public function beforeroute(Base $base, array $params)
+    public function beforeroute($base, $params)
     {
         if ($this->roles && $this->user->hasProvider() && false === $this->user->hasRoles($this->roles)) {
             $this->notAllowed();
@@ -61,7 +61,7 @@ class Controller
      * @param  Base
      * @param  array
      */
-    public function afterroute(Base $base, array $params)
+    public function afterroute($base, $params)
     {
         // what should do after routing done?
     }
@@ -71,7 +71,7 @@ class Controller
      *
      * @return boolean
      */
-    protected function isSubmitted($key = 'POST.submitted', $value = 'ok')
+    protected function isSubmitted($key = 'POST.submitted', $value = '1')
     {
         return $value===Base::instance()->get($key);
     }
@@ -192,5 +192,13 @@ class Controller
     protected function gotoHomepage()
     {
         $this->redirect($this->homepage);
+    }
+
+    /**
+     * Refresh page
+     */
+    protected function refresh()
+    {
+        $this->redirect(null);
     }
 }

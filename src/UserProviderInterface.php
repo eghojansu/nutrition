@@ -5,27 +5,6 @@ namespace Nutrition;
 interface UserProviderInterface
 {
     /**
-     * Get user id
-     *
-     * @return mixed
-     */
-    public function getId();
-
-    /**
-     * Get Password
-     *
-     * @return string
-     */
-    public function getPassword();
-
-    /**
-     * Get Plain password
-     *
-     * @return string
-     */
-    public function getPlainPassword();
-
-    /**
      * Get user roles
      *
      * @return array
@@ -74,9 +53,16 @@ interface UserProviderInterface
      * load user
      *
      * @param  string
-     * @return Object $this
+     * @return object $this
      */
-    public function loadUser($id);
+    public function loadUser($value);
+
+    /**
+     * Load User From Session
+     *
+     * @return object $this
+     */
+    public function reload();
 
     /**
      * Get user data as array to save in session
@@ -84,4 +70,19 @@ interface UserProviderInterface
      * @return array
      */
     public function cast();
+
+    /**
+     * Update user
+     *
+     * @return boolean
+     */
+    public function update();
+
+    /**
+     * Update password
+     *
+     * @param  string $plainPassword
+     * @return object $this
+     */
+    public function updatePassword($plainPassword);
 }

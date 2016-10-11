@@ -13,6 +13,7 @@ use DB\Cursor;
 use DB\SQL\Mapper as SQLMapperOri;
 use DB\Jig\Mapper as JigMapperOri;
 use DB\Mongo\Mapper as MongoMapperOri;
+use PDO;
 
 class Validation
 {
@@ -32,6 +33,10 @@ class Validation
      */
     protected $map;
     /**
+     * @var  array
+     */
+    protected $lookup;
+    /**
      * Default messages
      * @var  array
      */
@@ -41,11 +46,29 @@ class Validation
      * @var string
      */
     protected $cursor;
+    /**
+     * Field labels
+     *
+     * @var array
+     */
+    protected $labels = [];
 
-    public function __construct(Cursor $map = null)
+    public function __construct(Cursor $map = null, array $lookup = [])
     {
         $this->map = $map;
+        $this->lookup = $lookup;
         $this->messages = Base::instance()->get('validation_messages');
+    }
+
+    /**
+     * Label
+     * @param array $labels
+     */
+    public function setLabels(array $labels)
+    {
+        $this->labels = $labels;
+
+        return $this;
     }
 
     /**
@@ -63,6 +86,7 @@ class Validation
 
         $pattern = [
             '{field}'=>$field,
+            '{label}'=>$this->getLabel($field),
             '{value}'=>$this->getValue()
         ];
         foreach ($args as $key => $value) {
@@ -95,6 +119,16 @@ class Validation
     }
 
     /**
+     * Check if no errors
+     *
+     * @return boolean
+     */
+    public function valid()
+    {
+        return !$this->hasError();
+    }
+
+    /**
      * Check errors
      *
      * @return boolean
@@ -109,9 +143,9 @@ class Validation
      *
      * @param string
      * @param string
-     * @param array
+     * @param mixed
      */
-    public function addFilter($field, $filter, array $args = [])
+    public function addFilter($field, $filter, $args = null)
     {
         if (!isset($this->filters[$field])) {
             $this->filters[$field] = [];
@@ -119,7 +153,29 @@ class Validation
         if (false === is_string($filter) && is_callable($filter)) {
             $this->filters[$field][] = $filter;
         } else {
-            $this->filters[$field][$filter] = $args;
+            $this->filters[$field][$filter] = is_array($args)?$args:[$args];
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove filter
+     *
+     * @param  string $field
+     * @param  array  $filters
+     * @return object $this
+     */
+    public function removeFilter($field, array $filters = [])
+    {
+        if (isset($this->filters[$field])) {
+            if ($filters) {
+                foreach ($filters as $filter) {
+                    unset($this->filters[$field][$filter]);
+                }
+            } else {
+                unset($this->filters[$field]);
+            }
         }
 
         return $this;
@@ -148,7 +204,7 @@ class Validation
 
     /**
      * Perform validation
-     * @return boolean
+     * @return object $this
      */
     public function validate()
     {
@@ -160,7 +216,7 @@ class Validation
             $this->validateField($field, $filters);
         }
 
-        return !$this->hasError();
+        return $this;
     }
 
     /**
@@ -188,38 +244,66 @@ class Validation
 
     /**
      * Validate integer
-     * @param  int $min
      * @param  int $max
      * @param  int $length max length
      * @return bool
      */
-    protected function validationInteger($min = null, $max = null, $length = null)
+    protected function validationMaxInt($max = null, $length = null)
+    {
+        $number    = $this->getValue();
+        $isInt     = is_numeric($number) && is_int($number * 1);
+        $maxPassed = $isInt && (is_null($max) || $number <= $max);
+        $lenPassed = $isInt && (is_null($length) || strlen($number) <= $length);
+
+        return (bool) ((''===$number || is_null($number)) || ($maxPassed && $lenPassed));
+    }
+
+    /**
+     * Validate integer
+     * @param  int $min
+     * @param  int $length max length
+     * @return bool
+     */
+    protected function validationMinInt($min = null, $length = null)
     {
         $number    = $this->getValue();
         $isInt     = is_numeric($number) && is_int($number * 1);
         $minPassed = $isInt && (is_null($min) || $number >= $min);
-        $maxPassed = $isInt && (is_null($max) || $number <= $max);
         $lenPassed = $isInt && (is_null($length) || strlen($number) <= $length);
 
-        return (bool) ((''===$number || is_null($number)) || ($minPassed && $maxPassed && $lenPassed));
+        return (bool) ((''===$number || is_null($number)) || ($minPassed && $lenPassed));
+    }
+
+    /**
+     * Validate float
+     * @param  float $max
+     * @param  int $length max length
+     * @return bool
+     */
+    protected function validationMaxFloat($max = null, $length = null)
+    {
+        $number    = $this->getValue();
+        $isNumber  = is_numeric($number);
+        $maxPassed = $isNumber && (is_null($max) || $number <= $max);
+        $lenPassed = $isNumber && (is_null($length) || strlen($number) <= $length+1);
+
+        return (bool) ((''===$number || is_null($number)) || ($maxPassed && $lenPassed));
     }
 
     /**
      * Validate float
      * @param  float $min
-     * @param  float $max
      * @param  int $length max length
      * @return bool
      */
-    protected function validationFloat($min = null, $max = null, $length = null)
+    protected function validationMinFloat($min = null, $length = null)
     {
         $number    = $this->getValue();
         $isNumber  = is_numeric($number);
         $minPassed = $isNumber && (is_null($min) || $number >= $min);
-        $maxPassed = $isNumber && (is_null($max) || $number <= $max);
         $lenPassed = $isNumber && (is_null($length) || strlen($number) <= $length+1);
 
-        return (bool) ((''===$number || is_null($number)) || ($minPassed && $maxPassed && $lenPassed));
+        return (bool) ((''===$number || is_null($number)) || ($minPassed && $lenPassed));
     }
 
     /**
@@ -247,20 +331,34 @@ class Validation
 
     /**
      * Validate string
-     * @param  int $min
      * @param  int $max
      * @param  bool $mayEmpty
      * @return bool
      */
-    protected function validationString($min = null, $max = null, $mayEmpty = false)
+    protected function validationMaxLength($max = null, $mayEmpty = false)
+    {
+        $value     = $this->getValue();
+        $length    = strlen($value);
+        $mayEmpty &= ('' === $value || is_null($value));
+        $maxPassed = is_null($max) || $length <= $max;
+
+        return (bool) ($mayEmpty || $maxPassed);
+    }
+
+    /**
+     * Validate string
+     * @param  int $min
+     * @param  bool $mayEmpty
+     * @return bool
+     */
+    protected function validationMinLength($min = null, $mayEmpty = false)
     {
         $value     = $this->getValue();
         $length    = strlen($value);
         $mayEmpty &= ('' === $value || is_null($value));
         $minPassed = is_null($min) || $length >= $min;
-        $maxPassed = is_null($max) || $length <= $max;
 
-        return (bool) ($mayEmpty || ($minPassed && $maxPassed));
+        return (bool) ($mayEmpty || $minPassed);
     }
 
     /**
@@ -274,30 +372,37 @@ class Validation
     {
         $value = $this->getValue();
         $mayEmpty &= empty($value);
-        $field || $field = $this->cursor;
 
-        // assume mapper in same namespace
-        if (false === strpos($mapNamespace, '\\')) {
-            $mapNamespace = getClass($this->map).'\\'.$mapNamespace;
+        if (!$mayEmpty) {
+            $field || $field = $this->cursor;
+
+            // assume mapper in same namespace
+            if (false === strpos($mapNamespace, '\\') && $this->map) {
+                $ns = get_class($this->map);
+                $pos = strrpos($ns, '\\');
+                $mapNamespace = ($pos === false ? '' : substr($ns, 0, $pos+1)).$mapNamespace;
+            }
+
+            $map = new $mapNamespace;
+            $options = ['limit'=>1];
+            if ($map instanceOf SQLMapperOri) {
+                $filter = ["$field = ?", $value];
+            }
+            elseif ($map instanceOf JigMapperOri) {
+                $filter = [$field=>$value];
+            }
+            elseif ($map instanceOf MongoMapperOri) {
+                $filter = ["@{$field} = ?", $value];
+            }
+            else {
+                user_error('Invalid mapper instance');
+            }
+            $map->load($filter, $options);
+
+            return $map->valid();
         }
 
-        $map = new $mapNamespace;
-        $options = ['limit'=>1];
-        if ($map instanceOf SQLMapperOri) {
-            $filter = ["$field = ?", $value];
-        }
-        elseif ($map instanceOf JigMapperOri) {
-            $filter = [$field=>$value];
-        }
-        elseif ($map instanceOf MongoMapperOri) {
-            $filter = ["@{$field} = ?", $value];
-        }
-        else {
-            user_error('Invalid mapper instance');
-        }
-        $map->load($filter, $options);
-
-        return (bool) ($mayEmpty || $map->valid());
+        return (bool) $mayEmpty;
     }
 
     /**
@@ -332,7 +437,7 @@ class Validation
             $pb = [];
             $primaryKey = is_array($primaryKey)?$primaryKey:[$primaryKey];
             foreach ($primaryKey as $key) {
-                $pa[$key] = $this->map->get($key);
+                $pa[$key] = $this->map->getPrevious($key);
                 $pb[$key] = $map->get($key);
             }
 
@@ -371,12 +476,31 @@ class Validation
     }
 
     /**
+     * Reverse date with delimiter and glue
+     * @return bool
+     */
+    protected function validationReverseDate($delimiter = null, $glue = null)
+    {
+        $delimiter = $delimiter?:'-';
+        $glue = $glue?:'-';
+
+        $value    = $this->getValue();
+        $x = explode($delimiter, $value);
+        krsort($x);
+
+        return implode($glue, $x);
+    }
+
+    /**
      * Get current field value
      * @return mixed
      */
     protected function getValue()
     {
-        return ($this->cursor && $this->map && $this->map->exists($this->cursor))?$this->map->get($this->cursor):null;
+        return $this->cursor ? (
+            ($this->map && $this->map->exists($this->cursor)) ? $this->map->get($this->cursor) : (
+                isset($this->lookup[$this->cursor])?$this->lookup[$this->cursor]:null)
+            ) : null;
     }
 
     /**
@@ -392,7 +516,12 @@ class Validation
                 $filter = $args;
                 $args = [];
             }
-            is_array($args) || $args = [$args];
+            if (is_callable($args)) {
+                $args = call_user_func($args);
+            }
+            if (!is_array($args)) {
+                $args = [$args];
+            }
             $callable = $this->resolveMethod($filter);
             $out = call_user_func_array($callable, $args);
             if (is_bool($out)) {
@@ -435,8 +564,12 @@ class Validation
     {
         $app = Base::instance();
         foreach ($this->map?$this->map->schema():[] as $field => $schema) {
+            if ($schema['pkey'] && PDO::PARAM_INT === $schema['pdo_type']) {
+                continue;
+            }
+
             $filters = [];
-            $filters['required'] = !$schema['nullable'];
+            $filters['required'] = [!$schema['nullable']];
             if (preg_match('/^(?<type>\w+)(?:\((?<length>.+)\))?/', $schema['type'], $match)) {
                 $length = isset($match['length'])?$match['length']:null;
                 switch ($match['type']) {
@@ -445,7 +578,7 @@ class Validation
                     case 'smallint':
                     case 'tinyint':
                     case 'integer':
-                        $filters['integer'] = [null, null, $length];
+                        $filters['maxInt'] = [null, $length];
                         break;
                     case 'decimal':
                     case 'double':
@@ -455,17 +588,17 @@ class Validation
                         $base = pow(10, $x[0]-$x[1])-1;
                         $precision = (pow(10, $x[1]) - 1)*1/pow(10, $x[1]);
                         $max = $base + $precision;
-                        $filters['float'] = [null, $max, $length];
+                        $filters['maxFloat'] = [$max, $length];
                         break;
                     case 'enum':
                     case 'set':
                         $filters['choices'] = [$app->split(str_replace(['"', "'"], '', $length)), $schema['nullable']];
                         break;
                     case 'date':
-                        $filters['date'] = $schema['nullable'];
+                        $filters['date'] = [$schema['nullable']];
                         break;
                     default:
-                        $filters['string'] = [null, $length, $schema['nullable']];
+                        $filters['maxLength'] = [$length, $schema['nullable']];
                         break;
                 }
             }
@@ -476,5 +609,16 @@ class Validation
         }
 
         return $this;
+    }
+
+    /**
+     * Get label
+     *
+     * @param  string
+     * @return string
+     */
+    protected function getLabel($field)
+    {
+        return isset($this->labels[$field])?$this->labels[$field]:ucwords(str_replace('_', ' ', $field));
     }
 }

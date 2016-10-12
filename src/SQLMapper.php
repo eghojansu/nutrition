@@ -83,12 +83,13 @@ class SQLMapper extends Mapper
      * @param string $columName
      * @param string $format
      * @param string|boolean $assign
+     * @param array $filter
      * @return object|string
      */
-    public function nextID($columnName, $format, $assign = false)
+    public function nextID($columnName, $format, $assign = false, array $filter = null)
     {
         $clone = clone $this;
-        $clone->load(null, [
+        $clone->load($filter, [
             'limit'=>1,
             'order'=>$columnName.' desc',
             ]);
@@ -111,9 +112,6 @@ class SQLMapper extends Mapper
                 str_pad($last+1, strlen($match[1]), '0', STR_PAD_LEFT):
                 date($match[1]);
         }, $format);
-
-echo '<pre>';
-echo $this->db->log();die;
 
         if ($assign) {
             $this->set(is_string($assign)?$assign:$columnName, $id);

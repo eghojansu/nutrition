@@ -13,6 +13,19 @@ class Helper
     public static $romans = [1=>'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 
     /**
+     * Prepend each array key with prefix
+     * @param array $array
+     * @param string $prefix
+     * @return array
+     */
+    public static function prependKey(array $array, $prefix = ':')
+    {
+        return array_combine(array_map(function($a) use ($prefix) {
+            return $prefix.$a;
+        }, array_keys($array)), array_values($array));
+    }
+
+    /**
      * Number format wrapper
      * @param  number $no
      * @param  int $decimal

@@ -1,7 +1,5 @@
 # Nutrition
 
-> Version 3 Beta
-
 Add nutrition to [fatfree framework](https://github.com/bcosca/fatfree)
 
 
@@ -20,7 +18,7 @@ SECURITY.provider = \UserClass
 SECURITY.sessionKey = user
 
 # in order to use SQL Mapper you need construct DB\SQL and assign as DB.SQL in global var
-# but you can also set key in Mapper class too
+# but you can also set key in Mapper class too via connection propertiy
 DB.SQL = (DB\SQL) instance
 # in order to use Jig Mapper you need construct DB\Jig and assign as DB.Jig in global var
 DB.Jig = (DB\Jig) instance

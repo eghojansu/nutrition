@@ -72,6 +72,15 @@ interface UserProviderInterface
     public function cast();
 
     /**
+     * Copy from global var
+     *
+     * @param  string|array $var if string it should be global var key
+     * @param  callback $func callback that should return array
+     * @return object $this
+     */
+    public function copyfrom($var,$func=NULL);
+
+    /**
      * Update user
      *
      * @return boolean

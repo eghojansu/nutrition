@@ -230,6 +230,22 @@ class Validation
     }
 
     /**
+     * Validate equal
+     * @param  bool $str to compare with
+     * @param  bool $fieldName str is field name
+     * @param  bool $required negate purposes
+     * @return bool
+     */
+    protected function validationEqual($str, $fieldName = true, $required = true)
+    {
+        $value = $this->getValue();
+        $str   = $fieldName?$this->map->get($str):$str;
+        $same  = $str == $value;
+
+        return (bool) ($same?:!$required);
+    }
+
+    /**
      * Validate required
      * @param  bool $required negate purposes
      * @return bool

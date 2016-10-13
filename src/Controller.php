@@ -24,6 +24,11 @@ class Controller
     protected $homepage;
 
     /**
+     * @var string
+     */
+    protected $loginpage;
+
+    /**
      * @var template key
      */
     protected $templateKey = 'view';
@@ -192,6 +197,26 @@ class Controller
     protected function gotoHomepage()
     {
         $this->redirect($this->homepage);
+    }
+
+    /**
+     * Check login
+     */
+    protected function checkLogin($redirect = null)
+    {
+        if ($this->user->notLogged()) {
+            $this->redirect($redirect?:$this->loginpage);
+        }
+    }
+
+    /**
+     * Redirect if was login
+     */
+    protected function userOnly($redirect = null)
+    {
+        if ($this->user->wasLogged()) {
+            $this->redirect($redirect?:$this->homepage);
+        }
     }
 
     /**

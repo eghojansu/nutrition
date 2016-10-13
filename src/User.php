@@ -86,6 +86,25 @@ class User extends Prefab
         return false;
     }
 
+    /**
+     * Update mechanism
+     *
+     * @return object $this
+     */
+    public function update()
+    {
+        if ($this->provider->update()) {
+            $this->updateSession();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Update session data
+     *
+     * @return object $this
+     */
     public function updateSession()
     {
         Base::instance()->set($this->sessionKey, $this->provider->cast());
@@ -101,6 +120,16 @@ class User extends Prefab
     public function wasLogged()
     {
         return false === empty(Base::instance()->get($this->sessionKey));
+    }
+
+    /**
+     * Check user was not logged
+     *
+     * @return boolean
+     */
+    public function notLogged()
+    {
+        return false === $this->wasLogged();
     }
 
     /**

@@ -283,7 +283,12 @@ class Helper
         }
 
         foreach ($content as $file) {
-            unlink($file);
+            if (is_dir($file)) {
+                rmdir($file);
+            }
+            else {
+                unlink($file);
+            }
         }
 
         return $content;

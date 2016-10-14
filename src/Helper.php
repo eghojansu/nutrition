@@ -4,6 +4,8 @@ namespace Nutrition;
 
 use DateTime;
 use DirectoryIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class Helper
 {
@@ -292,5 +294,79 @@ class Helper
         }
 
         return $content;
+    }
+
+    /**
+     * Remove dir fast version
+     * @param  string $path
+     * @return boolean
+     */
+    public static function removeDir2($path, $removeParent = true)
+    {
+        if (!$path || '.' === $path || '..' === $path || !file_exists($path)) {
+            return false;
+        }
+
+        $it = new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS);
+        $entries = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+
+        foreach($entries as $entry) {
+            if ($entry->isDir()){
+                rmdir($entry->getRealPath());
+            } else {
+                unlink($entry->getRealPath());
+            }
+        }
+
+        if ($removeParent) {
+            rmdir($path);
+        }
+
+        return true;
+    }
+
+    /**
+     * Copy a file, or recursively copy a folder and its contents
+     * @author      Aidan Lister <aidan@php.net>
+     * @version     1.0.1
+     * @link        http://aidanlister.com/2004/04/recursively-copying-directories-in-php/
+     * @param       string   $source    Source path
+     * @param       string   $dest      Destination path
+     * @param       int      $permissions New folder creation permissions
+     * @return      bool     Returns true on success, false on failure
+     */
+    public static function copyDir($source, $dest, $permissions = 0755)
+    {
+        // Check for symlinks
+        if (is_link($source)) {
+            return symlink(readlink($source), $dest);
+        }
+
+        // Simple copy for a file
+        if (is_file($source)) {
+            return copy($source, $dest);
+        }
+
+        // Make destination directory
+        if (!is_dir($dest)) {
+            mkdir($dest, $permissions, true);
+        }
+
+        // Loop through the folder
+        $dir = dir($source);
+        while (false !== $entry = $dir->read()) {
+            // Skip pointers
+            if ($entry == '.' || $entry == '..') {
+                continue;
+            }
+
+            // Deep copy directories
+            self::copyDir("$source/$entry", "$dest/$entry", $permissions);
+        }
+
+        // Clean up
+        $dir->close();
+
+        return true;
     }
 }

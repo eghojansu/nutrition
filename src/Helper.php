@@ -3,6 +3,7 @@
 namespace Nutrition;
 
 use DateTime;
+use DirectoryIterator;
 
 class Helper
 {
@@ -221,5 +222,70 @@ class Helper
         $diff = $date->diff(new DateTime);
 
         return $diff->format($format);
+    }
+
+    /**
+     * Get directory content
+     * @param  string $dirname
+     * @param  string $match regexp to match filename
+     * @param  boolean $recursive
+     * @param  boolean $includeHidden
+     * @param  boolean $includeDir
+     * @return array
+     */
+    public static function dirContent($dirname, $match = null, $recursive = false, $includeHidden = false, $includeDir = false)
+    {
+        $content = [];
+        if (!file_exists($dirname)) {
+            return $content;
+        }
+
+        $dir = new DirectoryIterator($dirname);
+        foreach ($dir as $file) {
+            $filename = $file->getFilename();
+            if ($match && false === preg_match('/'.$match.'/', $filename)) {
+                continue;
+            }
+
+            $hidden = '.' === $filename[0];
+            $include = !($file->isDot() || (!$includeHidden && $hidden));
+            if ($include) {
+                if ($file->isDir()) {
+                    if ($recursive) {
+                        $content = array_merge($content, self::dirContent($file->getPathname(), $match, true, $includeHidden, $includeDir));
+                    }
+                }
+                else
+                    $content[] = $file->getPathname();
+            }
+        }
+        if ($includeDir) {
+            array_push($content, realpath($dirname));
+        }
+
+        return $content;
+    }
+
+    /**
+     * Remove dir
+     * @param  string  $path
+     * @param  string $match regexp to match filename
+     * @param  boolean $removeParent
+     * @param  boolean $removeHidden
+     * @return array
+     */
+    public static function removeDir($path, $match = null, $removeParent = false, $removeHidden = false)
+    {
+        $content = self::dirContent($path, $match, true, $removeHidden, true);
+
+        if (!$removeParent) {
+            array_pop($content);
+        }
+
+        foreach ($content as $file) {
+            unlink($file);
+        }
+
+        return $content;
     }
 }

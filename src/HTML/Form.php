@@ -23,8 +23,10 @@ class Form extends AbstractHTML
     protected $labels = [];
     protected $controlAttrs = [];
     protected $labelAttrs = [];
+    protected $ignores = [];
     protected $labelElement = 'label';
     protected $method = 'POST';
+    protected $submitKey = 'submitted';
 
     /**
      * Construct
@@ -36,6 +38,16 @@ class Form extends AbstractHTML
         $this->mapper = $mapper;
         $this->validation = new Validation($mapper, $this->all());
         $this->init();
+    }
+
+    /**
+     * Check post request is submitted
+     *
+     * @return boolean
+     */
+    public function isSubmitted()
+    {
+        return (bool) Base::instance()->exists($this->method.'.'.$this->submitKey);
     }
 
     /**
@@ -128,6 +140,10 @@ class Form extends AbstractHTML
         foreach ($except as $key) {
             unset($all[$key]);
         }
+        foreach ($this->ignores as $key) {
+            unset($all[$key]);
+        }
+        unset($all[$this->submitKey]);
 
         return $this->assign($all);
     }
@@ -584,6 +600,28 @@ class Form extends AbstractHTML
         $str .= $this->numberList($name.'[1]', $a, $override);
 
         return $str;
+    }
+
+    /**
+     * Ignores field
+     * @param string
+     */
+    public function setIgnores(array $fields)
+    {
+        $this->ignores = $fields;
+
+        return $this;
+    }
+
+    /**
+     * Submitted key
+     * @param string
+     */
+    public function setSubmitKey($key)
+    {
+        $this->submitKey = $key;
+
+        return $this;
     }
 
     /**

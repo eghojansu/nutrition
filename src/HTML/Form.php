@@ -62,7 +62,7 @@ class Form extends AbstractHTML
 
     protected function onOpen()
     {
-        return '';
+        return $this->hidden($this->submitKey, ['value'=>'ok'], true);
     }
 
     protected function onClose()

@@ -16,6 +16,18 @@ class Helper
     public static $romans = [1=>'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 
     /**
+     * Left pad
+     * @param  int $input
+     * @param  int $length
+     * @param  string $prefix
+     * @return string
+     */
+    public static function leftPad($input, $length, $prefix = '')
+    {
+        return $prefix.str_pad($input, $length, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Prepend each array key with prefix
      * @param array $array
      * @param string $prefix

@@ -4,6 +4,7 @@ namespace Nutrition;
 
 use Base;
 use DB\SQL\Mapper;
+use ReflectionClass;
 
 class SQLMapper extends Mapper
 {
@@ -26,7 +27,14 @@ class SQLMapper extends Mapper
      *
      * @var  array
      */
-    protected $maps;
+    protected $maps = [];
+
+    /**
+     * Compiled Maps
+     *
+     * @var  array
+     */
+    protected $compiled = [];
 
     public function __construct($table = null, $fields = null, $ttl = 60)
     {
@@ -51,31 +59,54 @@ class SQLMapper extends Mapper
      * Get relation
      *
      * @param  string $name
+     * @param  boolean $forceReload
      * @return SQLMapper
      */
-    public function map($name)
+    public function map($name, $forceReload = false)
     {
         if (empty($this->maps[$name])) {
             return null;
         }
 
-        if (!$this->maps[$name] instanceOf SQLMapper) {
-            $map = $this->maps[$name];
+        if (!isset($this->compiled[$name]) || $forceReload) {
+            $map = $this->maps[$name] + [
+                'option'=>null,
+                'filter'=>null,
+                'args'=>[],
+            ];
 
-            $this->maps[$name] = is_callable($map['class'])?call_user_func_array($map['class'], [$this]):new $map['class'];
+            if (!isset($this->compiled[$name])) {
+                if (is_callable($map['class'])) {
+                    $this->compiled[$name] = call_user_func_array($map['class'], [$this]);
+                } else {
+                    $ref = new ReflectionClass($map['class']);
+                    $this->compiled[$name] = $map['args']?$ref->newInstanceArgs($map['args']):$ref->newInstance();
+                    $ref = null;
+                }
+            }
+            $filter = [''];
+            if ($map['filter']) {
+                $filter = $map['filter'];
+                foreach ($filter as $key => $value) {
+                    // get from current
+                    if (':' === $key[0] && ':' === $value[0]) {
+                        $filter[$key] = $this->get(substr($value, 1));
+                    }
+                }
+            }
             if (isset($map['key'])) {
                 $map['key'] = is_array($map['key'])?$map['key']:[$map['key']];
-
-                $filter = [''];
+                $ctr = 1;
                 foreach ($map['key'] as $key=>$pair) {
-                    $filter[0] .= ($filter[0]?', ':'').(is_numeric($key)?$pair:$key).' = ?';
-                    $filter[] = $this->get($pair);
+                    $kctr = ':k'.$ctr;
+                    $filter[0] .= ($filter[0]?' AND ':'').(is_numeric($key)?$pair:$key).' = '.$kctr;
+                    $filter[$kctr] = $this->get($pair);
                 }
-                $this->maps[$name]->load($filter, isset($map['option'])?$map['option']:null);
             }
+            $this->compiled[$name]->load(array_filter($filter)?$filter:null, isset($map['option'])?$map['option']:null);
         }
 
-        return $this->maps[$name];
+        return $this->compiled[$name];
     }
 
     /**

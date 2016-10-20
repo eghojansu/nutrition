@@ -375,4 +375,31 @@ class Helper
 
         return true;
     }
+
+    /**
+     * Handle file upload, cannot handle multiple files
+     * @param  string $key          $_FILES[$key]
+     * @param  string &$filename
+     * @param  array  $allowedTypes
+     * @return bool
+     */
+    public static function handleFileUpload($key, &$filename, $allowedTypes = [])
+    {
+        $result = false;
+        $isArray = isset($_FILES[$key]) && is_array($_FILES[$key]['error']);
+
+        if ($isArray) {
+            return $result;
+        }
+
+        if (isset($_FILES[$key]) &&
+            UPLOAD_ERR_OK === $_FILES[$key]['error'] &&
+            ($allowedTypes && in_array($_FILES[$key]['type'], $allowedTypes))) {
+            $ext = strtolower(strrchr($_FILES[$key]['name'], '.'));
+            $filename .= $ext;
+            $result = move_uploaded_file($_FILES[$key]['tmp_name'], $filename);
+        }
+
+        return $result;
+    }
 }

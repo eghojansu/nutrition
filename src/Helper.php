@@ -343,6 +343,9 @@ class Helper
      */
     public static function copyDir($source, $dest, $permissions = 0755)
     {
+        $source = strtr($source, '\\', '/');
+        $dest = strtr($dest, '\\', '/');
+
         // Check for symlinks
         if (is_link($source)) {
             return symlink(readlink($source), $dest);
@@ -350,6 +353,11 @@ class Helper
 
         // Simple copy for a file
         if (is_file($source)) {
+            if (false !== ($last = strrpos($dest, '/'))) {
+                $baseDest = substr($dest, 0, $last);
+                @mkdir($baseDest, $permissions, true);
+            }
+
             return copy($source, $dest);
         }
 

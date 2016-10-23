@@ -60,9 +60,10 @@ class SQLMapper extends Mapper
      *
      * @param  string $name
      * @param  boolean $forceReload
+     * @param  array $lookup
      * @return SQLMapper
      */
-    public function map($name, $forceReload = false)
+    public function map($name, $forceReload = false, array $lookup = [])
     {
         if (empty($this->maps[$name])) {
             return null;
@@ -102,6 +103,9 @@ class SQLMapper extends Mapper
                     $filter[0] .= ($filter[0]?' AND ':'').(is_numeric($key)?$pair:$key).' = '.$kctr;
                     $filter[$kctr] = $this->get($pair);
                 }
+            }
+            foreach ($lookup as $key => $value) {
+                $filter[$key] = $value;
             }
             $this->compiled[$name]->load(array_filter($filter)?$filter:null, isset($map['option'])?$map['option']:null);
         }

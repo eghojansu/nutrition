@@ -410,4 +410,69 @@ class Helper
 
         return $result;
     }
+
+    /**
+     * Say number in indonesian
+     * note: this function can exhaust memory if $no greater than 1000000
+     * (need improvement)
+     * @param  float $no
+     * @return string
+     */
+    public static function terbilang($no)
+    {
+        if (!is_numeric($no)) {
+            return null;
+        }
+
+        $no *= 1;
+        $minus = 0 > $no;
+        $fraction = fmod($no, 1);
+        $cacah = ['nol','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+
+        $no = abs($no);
+        $no -= $fraction;
+
+        if ($no < 12) {
+            $result = $cacah[$no];
+        } elseif ($no < 20) {
+            $result = $cacah[$no-10].' belas';
+        } else if ($no < 100) {
+            $mod = $no % 10;
+            $mul = floor($no / 10);
+
+            $result = $cacah[$mul].' puluh '.$cacah[$mod];
+        } else if ($no < 1000) {
+            $mod = $no % 100;
+            $mul = floor($no / 100);
+
+            $result = $cacah[$mul].' ratus '.self::terbilang($mod);
+        } else if ($no < 100000) {
+            $mod = $no % 1000;
+            $mul = floor($no / 1000);
+
+            $result = self::terbilang($mul).' ribu '.self::terbilang($mod);
+        } else if ($no < 1000000000) {
+            $mod = $no % 1000000;
+            $mul = floor($no / 1000000);
+
+            $result = self::terbilang($mul).' juta '.self::terbilang($mod);
+        } else {
+            return $no * ($minus?-1:1);
+        }
+
+        $result = ($minus?'minus ':'').str_replace([' nol','satu ','sejuta'], ['','se','satu juta'], $result);
+
+        if ($fraction) {
+            $fraction = (string) $fraction;
+            for ($i=0, $e=strlen($fraction); $i < $e; $i++) {
+                if (0 === $i) {
+                    $result .= ' koma ';
+                } elseif ($i > 1) {
+                    $result .= ' '.self::terbilang($fraction[$i]);
+                }
+            }
+        }
+
+        return $result;
+    }
 }

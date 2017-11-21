@@ -1,27 +1,71 @@
-# Nutrition
+Nutrition
+=========
 
-Add nutrition to [fatfree framework](https://github.com/bcosca/fatfree)
+Add nutrition to [fatfree framework][1]
 
 
-## Instalation
+Instalation
+-----------
 
 ```
 composer require eghojansu/nutrition
 ```
 
-## Configuration
+Ingredients
+-----------
+
+This plugin add some functionality to base framework.
+
+- Security (Authentication and Authorization)
+- SQL Connection and Mapper extension
+- Template Setup to handle template variables
+- Simple FileSystem utility
+- Route extension (add missing functionality on fatfree routing)
+- Abstract Command, make simple controller being like symfony/command component
+- Session Flash
+- HTML Utility (Breadcrumb, Pagination)
+- Data Validator
+
+Configuration
+-------------
+
+This plugin add some global configuration.
+
+```ini
+[globals]
+; Log file
+LOG_FILE = null
+ERROR_TEMPLATE = null
+
+[DATABASE]
+; database configuration
+name = db_fal
+username = root
+password = null
+host = 127.0.0.1
+port = null
+
+; Security configuration
+[SECURITY]
+user_class = null
+user_provider = null
+password_encoder = null
+
+; Firewalls
+[SECURITY.firewals.xxxNamexxx]
+path = ^/admin
+roles = ROLE_ADMIN
+login_route = login_admin
+
+; Role hierarchy
+[SECURITY.role_hierarchy]
+ROLE_B = ROLE_A
+ROLE_C = ROLE_B
 
 ```
-# user class that implement Nutrition\UserProviderInterface
-SECURITY.provider = \UserClass
-# session key
-SECURITY.sessionKey = user
 
-# in order to use SQL Mapper you need construct DB\SQL and assign as DB.SQL in global var
-# but you can also set key in Mapper class too via connection propertiy
-DB.SQL = (DB\SQL) instance
-# in order to use Jig Mapper you need construct DB\Jig and assign as DB.Jig in global var
-DB.Jig = (DB\Jig) instance
-# in order to use Mongo Mapper you need construct DB\Mongo and assign as DB.Mongo in global var
-DB.Mongo = (DB\Mongo) instance
-```
+Documentation
+-------------
+Please refer to source-code-documentation to see detail.
+
+[1]: https://github.com/bcosca/fatfree

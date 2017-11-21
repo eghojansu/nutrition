@@ -1,4 +1,4 @@
 vendor/
-dev/notes/
 var/
-*.lock
+doc/
+*.sublime-workspace

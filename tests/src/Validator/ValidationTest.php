@@ -11,7 +11,7 @@ class ValidationTest extends MyTestCase
 {
     public function testAdd()
     {
-        $validator = new Validation([], []);
+        $validator = new Validation();
 
         $this->assertCount(0, $validator->getConstraints());
 
@@ -23,22 +23,44 @@ class ValidationTest extends MyTestCase
     public function testValidate()
     {
         $validator = new Validation([
-            'username' => 'not blank'
-        ], [
             'username' => new NotBlank(),
+        ], [
+            'username' => 'not blank'
         ]);
         $violations = $validator->validate();
 
         $this->assertInstanceOf(ViolationList::class, $violations);
         $this->assertFalse($violations->hasViolation());
+
+        $violations = $validator->validate(['Default'], [
+            'username' => 'not blank  '
+        ]);
+
+        $this->assertInstanceOf(ViolationList::class, $violations);
+        $this->assertFalse($violations->hasViolation());
+        $this->assertEquals(['username'=>'not blank'], $validator->getData());
+
+
+        $validator = new Validation([
+            'username' => new NotBlank([
+                'normalizer' => function($data) { return $data.'-transformed'; }
+            ]),
+        ], [
+            'username' => 'not blank'
+        ]);
+        $violations = $validator->validate();
+
+        $this->assertInstanceOf(ViolationList::class, $violations);
+        $this->assertFalse($violations->hasViolation());
+        $this->assertEquals(['username'=>'not blank-transformed'], $validator->getData());
     }
 
     public function testAfter()
     {
         $validator = new Validation([
-            'username' => 'not blank'
-        ], [
             'username' => new NotBlank(),
+        ], [
+            'username' => 'not blank'
         ]);
         $validator->after(function($data, $violations) {
             $data['username'] = 'username';
@@ -65,9 +87,9 @@ class ValidationTest extends MyTestCase
     public function testGetData()
     {
         $validator = new Validation([
-            'username' => 'not blank'
-        ], [
             'username' => new NotBlank(),
+        ], [
+            'username' => 'not blank'
         ]);
         $violations = $validator->validate();
 

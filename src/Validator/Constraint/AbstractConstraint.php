@@ -24,7 +24,9 @@ abstract class AbstractConstraint implements ConstraintInterface
     {
         $this->option = $option + [
             'message' => static::MESSAGE_DEFAULT,
-            'groups' => ['Default']
+            'groups' => ['Default'],
+            'trim' => true,
+            'normalizer' => null,
         ];
     }
 
@@ -53,6 +55,12 @@ abstract class AbstractConstraint implements ConstraintInterface
     */
     public function setValue($value)
     {
+        if ($this->option['trim'] && is_string($value)) {
+            $value = trim($value);
+        }
+        if ($this->option['normalizer']) {
+            $value = call_user_func_array($this->option['normalizer'], [$value]);
+        }
         $this->value = $value;
 
         return $this;

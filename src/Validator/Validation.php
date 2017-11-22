@@ -12,10 +12,10 @@ class Validation
     private $data = [];
     private $after;
 
-    public function __construct(array $data, array $constraints = [])
+    public function __construct(array $constraints = null, array $data = null)
     {
-        $this->originalData = $data;
-        $this->constraints = $constraints;
+        $this->originalData = (array) $data;
+        $this->constraints = (array) $constraints;
     }
 
     /**
@@ -47,14 +47,17 @@ class Validation
     /**
      * Validate
      * @param array $groups
+     * @param array|null $data
      * @return ViolationList
      */
-    public function validate(array $groups = ['Default'])
+    public function validate(array $groups = ['Default'], array $data = null)
     {
-        $groups = (array) $groups;
+        $data = $data ?: $this->originalData;
+        $this->data = [];
+
         $violations = new ViolationList();
         foreach ($this->constraints as $key => $constraints) {
-            $value = array_key_exists($key, $this->originalData) ? $this->originalData[$key] : null;
+            $value = array_key_exists($key, $data) ? $data[$key] : null;
             $constraints = is_array($constraints) ? $constraints : [$constraints];
             foreach ($constraints as $constraint) {
                 if ($this->useConstraint($groups, $constraint)) {

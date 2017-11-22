@@ -15,7 +15,7 @@ class InTable extends AbstractConstraint
 
         $this->option += [
             'mapper' => null,
-            'field' => 'id',
+            'field' => 'ID',
         ];
     }
 

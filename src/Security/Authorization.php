@@ -31,7 +31,7 @@ class Authorization extends Prefab
             $this->firewalls['pattern']
             && preg_match($this->firewalls['pattern'], $currentPath, $matches)
         ) {
-            $key = self::pathName($matches['path']);
+            $key = static::pathName($matches['path']);
             $config = $this->firewalls['paths'][$key];
 
             if (!$this->isGranted($config['roles'])) {
@@ -70,7 +70,7 @@ class Authorization extends Prefab
 
             foreach (Base::instance()->get('SECURITY.firewalls') ?: [] as $name => $config) {
                 $pattern .= ($pattern?'|':'').$config['path'];
-                $key = self::pathName($config['path']);
+                $key = static::pathName($config['path']);
                 $firewalls['paths'][$key] = [
                     'login_route' => $config['login_route'],
                     'roles' => $config['roles'],

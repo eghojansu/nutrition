@@ -15,9 +15,9 @@ class NotInTable extends AbstractConstraint
 
         $this->option += [
             'mapper' => null,
-            'field' => 'id',
+            'field' => 'ID',
             // primary key
-            'id' => 'id',
+            'id' => 'ID',
             // current primary key value
             'current_id' => null,
         ];

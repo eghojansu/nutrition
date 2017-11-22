@@ -42,6 +42,17 @@ abstract class MagicService extends Prefab implements ArrayAccess
     abstract function clear($key);
 
     /**
+     * To resolve key
+     * @param  string $key
+     * @param  array|null $info to help you take decision
+     * @return string
+     */
+    public static function resolveKey($key, array $info = null)
+    {
+        return $key;
+    }
+
+    /**
     *   Convenience method for checking property value
     *   @return mixed
     *   @param $key string
@@ -137,11 +148,11 @@ abstract class MagicService extends Prefab implements ArrayAccess
     {
         if (preg_match('/^(get|is|set|exists|clear)(.+)$/', $name, $matches)) {
             $method = $matches[1] === 'is' ? 'get' : $matches[1];
-            array_unshift($params, lcfirst($matches[2]));
+            array_unshift($params, static::resolveKey($matches[2]));
 
             return call_user_func_array([$this, $method], $params);
         }
 
-        throw new RuntimeException(sprintf(self::E_METHOD, $name, static::class));
+        throw new RuntimeException(sprintf(static::E_METHOD, $name, static::class));
     }
 }

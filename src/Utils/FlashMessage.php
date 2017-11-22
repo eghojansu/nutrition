@@ -19,7 +19,7 @@ class FlashMessage extends Prefab
      */
     public function add($key, $message)
     {
-        $fullKey = self::SESSION_NAME.'.'.$key;
+        $fullKey = static::SESSION_NAME.'.'.$key;
         $base = Base::instance();
         if ($base->exists($fullKey)) {
             $base->push($fullKey, $message);
@@ -37,7 +37,7 @@ class FlashMessage extends Prefab
      */
     public function get($key)
     {
-        $fullKey = self::SESSION_NAME.'.'.$key;
+        $fullKey = static::SESSION_NAME.'.'.$key;
         $base = Base::instance();
         $message = $base->get($fullKey);
         $base->clear($fullKey);
@@ -52,8 +52,8 @@ class FlashMessage extends Prefab
     public function all()
     {
         $base = Base::instance();
-        $messages = $base->get(self::SESSION_NAME);
-        $base->clear(self::SESSION_NAME);
+        $messages = $base->get(static::SESSION_NAME);
+        $base->clear(static::SESSION_NAME);
 
         return $messages;
     }

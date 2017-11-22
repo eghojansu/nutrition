@@ -29,7 +29,7 @@ class StringParser
     {
         $this->originalString = str_replace("\r\n", PHP_EOL, $str);
         $this->pattern = '/(?<prefix>[^<]*)?<(?<color>'.
-            implode('|', array_keys(self::$colorMaps)).
+            implode('|', array_keys(static::$colorMaps)).
             ')>(?<str>[^<]+)<\/(?:\\1)?>(?<suffix>[^<]*)?/';
     }
 
@@ -71,7 +71,7 @@ class StringParser
         if (preg_match_all($this->pattern, $this->originalString, $matches, PREG_SET_ORDER)) {
             $this->parsed = [];
             foreach ($matches as $match) {
-                $code = explode(';', self::$colorMaps[$match['color']]);
+                $code = explode(';', static::$colorMaps[$match['color']]);
                 $parsed = [];
                 if ($match['prefix']) {
                     $parsed = array_merge($parsed, $this->parseLine($match['prefix']));

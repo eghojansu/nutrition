@@ -55,7 +55,7 @@ class CommonUtil
      */
     public static function onOff($value)
     {
-        return self::trueFalse($value, 'On', 'Off');
+        return static::trueFalse($value, 'On', 'Off');
     }
 
     /**
@@ -63,7 +63,7 @@ class CommonUtil
      */
     public static function yesNo($value)
     {
-        return self::trueFalse($value, 'Yes', 'No');
+        return static::trueFalse($value, 'Yes', 'No');
     }
 
     /**

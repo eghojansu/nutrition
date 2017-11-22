@@ -58,7 +58,7 @@ class FileSystem
 
         foreach (glob($this->dir.'/*') as $item) {
             if (is_dir($item)) {
-                self::create($item)->removeDir(true);
+                static::create($item)->removeDir(true);
             } else {
                 @unlink($item);
             }

@@ -68,4 +68,11 @@ Documentation
 -------------
 Please refer to source-code-documentation to see detail.
 
+
+Database/Mapper Name Case Usage
+-------------------------------
+
+This library developed with PascalCase concept for database and mapper, The mapper's table name will be pluralized. You can change this behaviour by override parent's method.
+
+
 [1]: https://github.com/bcosca/fatfree

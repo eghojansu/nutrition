@@ -10,20 +10,20 @@ use Base;
  */
 class User implements UserInterface
 {
-    protected $username;
-    protected $password;
-    protected $roles;
-    protected $expired;
-    protected $blocked;
+    protected $Username;
+    protected $Password;
+    protected $Roles;
+    protected $Expired;
+    protected $Blocked;
 
 
     public function __construct($username, $password, array $roles, $expired = false, $blocked = false)
     {
-        $this->username = $username;
-        $this->password = $password;
-        $this->roles = $roles;
-        $this->expired = $expired;
-        $this->blocked = $blocked;
+        $this->Username = $username;
+        $this->Password = $password;
+        $this->Roles = $roles;
+        $this->Expired = $expired;
+        $this->Blocked = $blocked;
     }
 
     /**
@@ -31,7 +31,7 @@ class User implements UserInterface
     */
     public function getUsername()
     {
-        return $this->username;
+        return $this->Username;
     }
 
     /**
@@ -39,7 +39,7 @@ class User implements UserInterface
     */
     public function getPassword()
     {
-        return $this->password;
+        return $this->Password;
     }
 
     /**
@@ -47,7 +47,7 @@ class User implements UserInterface
     */
     public function getRoles()
     {
-        return $this->roles;
+        return $this->Roles;
     }
 
     /**
@@ -55,7 +55,7 @@ class User implements UserInterface
     */
     public function isExpired()
     {
-        return $this->expired;
+        return $this->Expired;
     }
 
     /**
@@ -63,6 +63,6 @@ class User implements UserInterface
     */
     public function isBlocked()
     {
-        return $this->blocked;
+        return $this->Blocked;
     }
 }

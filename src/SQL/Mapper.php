@@ -8,6 +8,7 @@ use DateTime;
 use Nutrition\SQL\ConnectionBuilder;
 use Nutrition\SQL\Criteria;
 use Nutrition\Utils\CommonUtil;
+use Nutrition\Utils\Inflector;
 use Nutrition\Utils\Pagination;
 use RuntimeException;
 
@@ -26,7 +27,7 @@ abstract class Mapper extends BaseMapper
     {
         parent::__construct(
             ConnectionBuilder::instance()->getConnection(),
-            $this->source ?: static::tableName()
+            static::tableName()
         );
 
         $this->trigger = [
@@ -46,7 +47,7 @@ abstract class Mapper extends BaseMapper
      */
     public static function tableName()
     {
-        return CommonUtil::snakeCase(trim(strrchr(static::class, '\\'), '\\'));
+        return Inflector::pluralize(trim(strrchr(static::class, '\\'), '\\'));
     }
 
     /**
@@ -71,6 +72,41 @@ abstract class Mapper extends BaseMapper
     }
 
     /**
+     * DateTime to sql date
+     * @param  DateTime|null $date
+     * @return string
+     */
+    public static function sqlDate(DateTime $date = null)
+    {
+        $date = $date ?: new DateTime();
+
+        return $date->format('Y-m-d');
+    }
+
+    /**
+     * DateTime to sql time
+     * @param  DateTime|null $date
+     * @return string
+     */
+    public static function sqlTime(DateTime $date = null)
+    {
+        $date = $date ?: new DateTime();
+
+        return $date->format('H:i:s');
+    }
+
+    /**
+     * To resolve key
+     * @param  string $key
+     * @param  array|null $info to help you take decision
+     * @return string
+     */
+    public static function resolveKey($key, array $info = null)
+    {
+        return $key;
+    }
+
+    /**
      * Proxy to finder method
      * @param  string $name
      * @param  array  $args
@@ -79,13 +115,15 @@ abstract class Mapper extends BaseMapper
     public function __call($name, $args)
     {
         if ('findoneby' === strtolower(substr($name, 0, 9))) {
-            $field = CommonUtil::snakeCase(substr($name, 9));
-
-            return $this->findone(Criteria::create()->add($field, array_shift($args))->get());
+            return $this->findone(Criteria::create()->add(
+                static::resolveKey(substr($name, 9)),
+                array_shift($args)
+            )->get());
         } elseif ('findby' === strtolower(substr($name, 0, 6))) {
-            $field = CommonUtil::snakeCase(substr($name, 6));
-
-            return $this->find(Criteria::create()->add($field, array_shift($args))->get());
+            return $this->find(Criteria::create()->add(
+                static::resolveKey(substr($name, 6)),
+                array_shift($args)
+            )->get());
         }
 
         return parent::__call($name, $args);

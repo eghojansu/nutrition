@@ -26,7 +26,7 @@ class UserManager extends Prefab
      */
     public function isLogin()
     {
-        return Base::instance()->get(self::SESSION_LOGIN) ?: false;
+        return Base::instance()->get(static::SESSION_LOGIN) ?: false;
     }
 
     /**
@@ -44,8 +44,8 @@ class UserManager extends Prefab
     public function setUser(UserInterface $user)
     {
         Base::instance()->mset([
-            self::SESSION_USER => $user->getUsername(),
-            self::SESSION_LOGIN => true,
+            static::SESSION_USER => $user->getUsername(),
+            static::SESSION_LOGIN => true,
         ]);
         $this->user = $user;
     }
@@ -57,7 +57,7 @@ class UserManager extends Prefab
     public function getUser()
     {
         if (null === $this->user && $this->isLogin()) {
-            $username = Base::instance()->get(self::SESSION_USER);
+            $username = Base::instance()->get(static::SESSION_USER);
             $this->user = Security::instance()->getUserProvider()->loadByUsername($username);
 
             try {

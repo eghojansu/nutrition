@@ -37,7 +37,7 @@ class MapperTest extends MyTestCase
 
     public function testTableName()
     {
-        $this->assertEquals('sample_entity', $this->entity->tableName());
+        $this->assertEquals('SampleEntities', $this->entity->tableName());
     }
 
     public function testCreatePagination()
@@ -54,11 +54,11 @@ class MapperTest extends MyTestCase
     {
         $this->assertEquals(0, $this->entity->count());
 
-        $this->entity->set('name', 'Record 1');
+        $this->entity->set('Name', 'Record 1');
         $this->entity->save();
         $this->assertEquals(1, $this->entity->count());
-        $this->assertEquals('Record 1', $this->entity->findone()->name);
-        $this->assertEquals('Record 1', $this->entity->findOneByName('Record 1')->name);
+        $this->assertEquals('Record 1', $this->entity->findone()->Name);
+        $this->assertEquals('Record 1', $this->entity->findOneByName('Record 1')->Name);
         $this->assertCount(1, $this->entity->findByName('Record 1'));
     }
 

@@ -15,8 +15,8 @@ class Length extends AbstractConstraint
         $this->option = $option + [
             'max' => 255,
             'min' => 0,
-            'max_message' => self::MESSAGE_MAX,
-            'min_message' => self::MESSAGE_MIN,
+            'max_message' => static::MESSAGE_MAX,
+            'min_message' => static::MESSAGE_MIN,
             'groups' => ['Default']
         ];
     }

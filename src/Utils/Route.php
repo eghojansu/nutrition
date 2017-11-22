@@ -35,7 +35,7 @@ class Route extends Prefab
         $base = Base::instance();
         $url = $base["ALIASES.$route"];
         if (empty($url)) {
-            throw new RuntimeException(sprintf(self::E_ROUTE, $route));
+            throw new RuntimeException(sprintf(static::E_ROUTE, $route));
         }
         $params = (array) $params;
 

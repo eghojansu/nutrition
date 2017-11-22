@@ -40,10 +40,10 @@ class Database
     public static function createSampleEntityTable(ConnectionBuilder $builder)
     {
         $sql = <<<SQL
-CREATE TABLE sample_entity (
-    id INT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(200) NOT NULL,
-    PRIMARY KEY (id)
+CREATE TABLE SampleEntities (
+    ID INT NOT NULL AUTO_INCREMENT,
+    Name VARCHAR(200) NOT NULL,
+    PRIMARY KEY (ID)
 ) ENGINE = MyISAM
 SQL;
         $builder->getConnection()->exec($sql);
@@ -52,7 +52,7 @@ SQL;
     public static function insertSampleEntityTable(ConnectionBuilder $builder)
     {
         $sql = <<<SQL
-INSERT INTO sample_entity (name) VALUES
+INSERT INTO SampleEntities (Name) VALUES
     ('Record 1'),
     ('Record 2'),
     ('Record 3'),

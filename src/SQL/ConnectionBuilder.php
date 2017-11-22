@@ -82,7 +82,7 @@ class ConnectionBuilder extends Prefab
                     $this->config['password']
                 );
             } catch (Exception $e) {
-                throw new RuntimeException(self::E_CONNECT);
+                throw new RuntimeException(static::E_CONNECT);
             }
         }
 
@@ -104,7 +104,7 @@ class ConnectionBuilder extends Prefab
                 $this->config['password']
             );
         } catch (Exception $e) {
-            throw new RuntimeException(self::E_CONNECT);
+            throw new RuntimeException(static::E_CONNECT);
         }
     }
 
@@ -263,7 +263,7 @@ class ConnectionBuilder extends Prefab
             || empty($this->config['username'])
             || empty($this->config['host'])
         ) {
-            throw new InvalidArgumentException(self::E_CONFIG);
+            throw new InvalidArgumentException(static::E_CONFIG);
         }
     }
 }

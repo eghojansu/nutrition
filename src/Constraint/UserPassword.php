@@ -1,7 +1,8 @@
 <?php
 
-namespace Nutrition\Validator\Constraint;
+namespace Nutrition\Constraint;
 
+use Bumbon\Validation\Constraint\AbstractConstraint;
 use Nutrition\Security\Security;
 use Nutrition\Security\UserManager;
 

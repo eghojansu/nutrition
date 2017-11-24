@@ -1,15 +1,16 @@
 <?php
 
-namespace Nutrition\Validator\Constraint;
+namespace Nutrition\Constraint;
 
+use Bumbon\Validation\Constraint\AbstractConstraint;
 use DB\SQL\Mapper;
 use InvalidArgumentException;
 
-class InTable extends AbstractConstraint
+class Exists extends AbstractConstraint
 {
     const MESSAGE_DEFAULT = 'Nilai ini tidak ada.';
 
-    public function __construct(array $option = [])
+    public function __construct(array $option = null)
     {
         parent::__construct($option);
 

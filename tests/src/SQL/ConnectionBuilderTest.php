@@ -18,14 +18,13 @@ class ConnectionBuilderTest extends MyTestCase
     {
         $this->config = Database::getConfig();
         Base::instance()->set('DATABASE', $this->config);
-        Database::create($this->config);
+        Database::insertSampleEntityTable();
 
         $this->builder = new ConnectionBuilder();
     }
 
     protected function tearDown()
     {
-        Database::drop($this->config);
         $this->builder = null;
     }
 
@@ -38,12 +37,9 @@ class ConnectionBuilderTest extends MyTestCase
 
     public function testSetConfig()
     {
-        $config = [
-            'host'=>'localhost',
-            'name'=>'test_fatfree_nutrition',
-            'username'=>'root',
-            'password'=>'',
-        ];
+        $config = $this->config;
+        $config['password'] = '';
+
         $this->builder->setConfig($config);
         $this->assertEquals($config, $this->builder->getConfig());
         $this->assertEquals($config['password'], $this->builder->getConfig('password'));
@@ -107,11 +103,11 @@ class ConnectionBuilderTest extends MyTestCase
 
     public function testGetSize()
     {
-        $this->assertEquals(0, $this->builder->getSize());
+        $this->assertEquals(0.02, $this->builder->getSize());
     }
 
     public function testGetTables()
     {
-        $this->assertEquals([], $this->builder->getTables());
+        $this->assertEquals(['SampleEntities'], $this->builder->getTables());
     }
 }

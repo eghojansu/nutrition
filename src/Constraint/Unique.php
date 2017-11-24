@@ -1,11 +1,12 @@
 <?php
 
-namespace Nutrition\Validator\Constraint;
+namespace Nutrition\Constraint;
 
+use Bumbon\Validation\Constraint\AbstractConstraint;
 use DB\SQL\Mapper;
 use InvalidArgumentException;
 
-class NotInTable extends AbstractConstraint
+class Unique extends AbstractConstraint
 {
     const MESSAGE_DEFAULT = 'Nilai ini sudah digunakan.';
 

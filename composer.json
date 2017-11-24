@@ -13,7 +13,8 @@
         }
     ],
     "require": {
-        "bcosca/fatfree-core": "^3.6"
+        "bcosca/fatfree-core": "^3.6",
+        "eghojansu/bumbon-validation": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^6.4"

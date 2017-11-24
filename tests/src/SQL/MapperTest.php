@@ -19,15 +19,8 @@ class MapperTest extends MyTestCase
     {
         $this->config = Database::getConfig();
         Base::instance()->set('DATABASE', $this->config);
-        Database::create($this->config);
-        Database::createSampleEntityTable(ConnectionBuilder::instance());
 
         $this->entity = SampleEntity::create();
-    }
-
-    protected function tearDown()
-    {
-        Database::drop($this->config);
     }
 
     public function testCreate()
@@ -42,7 +35,7 @@ class MapperTest extends MyTestCase
 
     public function testCreatePagination()
     {
-        Database::insertSampleEntityTable(ConnectionBuilder::instance());
+        Database::insertSampleEntityTable();
 
         $pagination = $this->entity->createpagination();
 
@@ -52,6 +45,7 @@ class MapperTest extends MyTestCase
 
     public function testMagicMethodCall()
     {
+        Database::resetDatabase();
         $this->assertEquals(0, $this->entity->count());
 
         $this->entity->set('Name', 'Record 1');

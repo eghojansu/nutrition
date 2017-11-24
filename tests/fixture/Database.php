@@ -2,63 +2,65 @@
 
 namespace Nutrition\Test\Fixture;
 
-use Nutrition\SQL\ConnectionBuilder;
 use PDO;
 
 class Database
 {
+    protected static $pdo;
+    protected static $config = [
+        'host'=>'localhost',
+        'name'=>'test_fatfree_nutrition',
+        'username'=>'root',
+        'password'=>'root',
+    ];
+
     public static function getConfig()
     {
-        return [
-            'host'=>'localhost',
-            'name'=>'test_fatfree_nutrition',
-            'username'=>'root',
-            'password'=>'root',
-        ];
+        return self::$config;
     }
 
-    public static function createPDO(array $config)
+    public static function pdo()
     {
-        $dsn = 'mysql:host='.$config['host'];
-        return new PDO(
-            $dsn,
-            $config['username'],
-            $config['password']
-        );
-    }
-
-    public static function create(array $config)
-    {
-        self::createPDO($config)->exec('CREATE DATABASE IF NOT EXISTS '.$config['name']);
-    }
-
-    public static function drop(array $config)
-    {
-        self::createPDO($config)->exec('DROP DATABASE IF EXISTS '.$config['name']);
-    }
-
-    public static function createSampleEntityTable(ConnectionBuilder $builder)
-    {
-        $sql = <<<SQL
-CREATE TABLE SampleEntities (
-    ID INT NOT NULL AUTO_INCREMENT,
+        if (null === self::$pdo) {
+            $dsn = 'mysql:host='.self::$config['host'];
+            $pdo = new PDO(
+                $dsn,
+                self::$config['username'],
+                self::$config['password']
+            );
+            $pdo->exec('CREATE DATABASE IF NOT EXISTS '.self::$config['name']);
+            $pdo->exec('USE '.self::$config['name']);
+            $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS SampleEntities (
+    ID INT NOT NULL,
     Name VARCHAR(200) NOT NULL,
     PRIMARY KEY (ID)
-) ENGINE = MyISAM
+);
 SQL;
-        $builder->getConnection()->exec($sql);
+            $pdo->exec($sql);
+
+            self::$pdo = $pdo;
+        }
+
+        return self::$pdo;
     }
 
-    public static function insertSampleEntityTable(ConnectionBuilder $builder)
+    public static function resetDatabase()
+    {
+        self::pdo()->exec('DELETE FROM SampleEntities');
+    }
+
+    public static function insertSampleEntityTable()
     {
         $sql = <<<SQL
-INSERT INTO SampleEntities (Name) VALUES
-    ('Record 1'),
-    ('Record 2'),
-    ('Record 3'),
-    ('Record 4'),
-    ('Record 5')
+INSERT INTO SampleEntities VALUES
+    (1, 'Record 1'),
+    (2, 'Record 2'),
+    (3, 'Record 3'),
+    (4, 'Record 4'),
+    (5, 'Record 5')
 SQL;
-        $builder->getConnection()->exec($sql);
+        self::resetDatabase();
+        self::pdo()->exec($sql);
     }
 }

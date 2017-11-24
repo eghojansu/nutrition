@@ -4,10 +4,10 @@ namespace Nutrition\Test\Validator\Constraint;
 
 use Base;
 use MyTestCase;
+use Nutrition\Constraint\UserPassword;
 use Nutrition\Security\PlainPasswordEncoder;
 use Nutrition\Security\Security;
 use Nutrition\Security\UserManager;
-use Nutrition\Validator\Constraint\UserPassword;
 
 class UserPasswordTest extends MyTestCase
 {

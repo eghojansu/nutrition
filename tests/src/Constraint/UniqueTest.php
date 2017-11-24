@@ -4,12 +4,11 @@ namespace Nutrition\Test\Validator\Constraint;
 
 use Base;
 use MyTestCase;
-use Nutrition\SQL\ConnectionBuilder;
+use Nutrition\Constraint\Unique;
 use Nutrition\Test\Fixture\Database;
 use Nutrition\Test\Fixture\SampleEntity;
-use Nutrition\Validator\Constraint\NotInTable;
 
-class NotInTableTest extends MyTestCase
+class UniqueTest extends MyTestCase
 {
     private $entity;
     private $config;
@@ -17,23 +16,15 @@ class NotInTableTest extends MyTestCase
     protected function setUp()
     {
         $this->config = Database::getConfig();
-        Base::instance()->set('database', $this->config);
-        Database::create($this->config);
-        $builder = ConnectionBuilder::instance();
-        Database::createSampleEntityTable($builder);
-        Database::insertSampleEntityTable($builder);
+        Base::instance()->set('DATABASE', $this->config);
+        Database::insertSampleEntityTable();
 
         $this->entity = SampleEntity::create();
     }
 
-    protected function tearDown()
-    {
-        Database::drop($this->config);
-    }
-
     public function testValidate()
     {
-        $constraint = new NotInTable([
+        $constraint = new Unique([
             'mapper' => $this->entity
         ]);
 
@@ -41,7 +32,7 @@ class NotInTableTest extends MyTestCase
         $this->assertTrue($constraint->setValue(13)->validate()->isValid());
         $this->assertFalse($constraint->setValue(1)->validate()->isValid());
 
-        $constraint = new NotInTable([
+        $constraint = new Unique([
             'mapper' => SampleEntity::class
         ]);
 

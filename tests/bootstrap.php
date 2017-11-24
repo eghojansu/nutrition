@@ -1,6 +1,3 @@
 <?php
 
-require __DIR__.'/../vendor/autoload.php';
-
-
-$base = Base::instance();
+Nutrition\Test\Fixture\Database::pdo();

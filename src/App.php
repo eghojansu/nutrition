@@ -69,16 +69,15 @@ class App extends Prefab
 
     /**
      * Log message
-     * @param  string $logfile
      * @param  string $message
      * @return $this
      */
-    public function log($logfile, $message)
+    public function log($message)
     {
         $app = Base::instance();
-        if ($logfile) {
+        if ($app['LOG_FILE']) {
             if (null === $this->logger) {
-                $this->logger = new Log($logfile);
+                $this->logger = new Log($app['LOG_FILE']);
             }
             $this->logger->write($message);
         }
@@ -103,7 +102,9 @@ class App extends Prefab
             'code' => '000',
         ];
 
-        $this->log($app['LOG_FILE'], sprintf("[%s] %s %s",
+
+        $this->log(sprintf(
+            "[%s] %s %s",
             $req,
             $error['text'] ?: 'No-Message',
             $error['trace']

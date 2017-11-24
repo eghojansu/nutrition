@@ -39,9 +39,10 @@ class AppTest extends MyTestCase
     {
         $base = Base::instance();
         $base->set('LOGS', $this->logDir.'/');
+        $base->set('LOG_FILE', 'log.txt');
 
-        $this->app->log('log.txt', 'Test log');
-        $this->assertFileExists($file = $base['LOGS'].'log.txt');
+        $this->app->log('Test log');
+        $this->assertFileExists($file = $base['LOGS'].$base['LOG_FILE']);
         $this->assertContains('Test log', $base->read($file));
     }
 

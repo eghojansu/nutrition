@@ -22,7 +22,13 @@ class MyMagicService extends MagicService
 
     public function &get($key, $default = null)
     {
-        return $this->exists($key) ? $this->properties[$key] : $default;
+        if ($this->exists($key)) {
+            $value =& $this->properties[$key];
+        } else {
+            $value =& $default;
+        }
+
+        return $value;
     }
 
     public function clear($key)

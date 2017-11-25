@@ -28,7 +28,13 @@ class TemplateSetup extends MagicService
 
     public function &get($name, $default = null)
     {
-        return array_key_exists($name, $this->properties) ? $this->properties[$name] : $default;
+        if ($this->exists($name)) {
+            $ref =& $this->properties[$name];
+        } else {
+            $ref =& $default;
+        }
+
+        return $ref;
     }
 
     public function set($name, $value)
